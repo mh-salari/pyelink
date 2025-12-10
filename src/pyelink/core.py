@@ -199,18 +199,21 @@ class Settings:
                 f"VALIDATION_AREA_PROPORTION values must be in (0, 1], got: {self.VALIDATION_AREA_PROPORTION}"
             )
 
-        # Eye tracked validation
-        if self.EYE_TRACKED not in {"Left", "Right", "Both"}:
+        # Eye tracked validation (case-insensitive)
+        valid_eyes = {"left", "right", "both"}
+        if str(self.EYE_TRACKED).lower() not in valid_eyes:
             raise ValueError(f"Invalid EYE_TRACKED: {self.EYE_TRACKED}. Must be one of: 'Left', 'Right', 'Both'")
 
-        # Pupil tracking mode validation
-        if self.PUPIL_TRACKING_MODE not in {"CENTROID", "ELLIPSE"}:
+        # Pupil tracking mode validation (case-insensitive)
+        valid_pupil_modes = {"centroid", "ellipse"}
+        if str(self.PUPIL_TRACKING_MODE).lower() not in valid_pupil_modes:
             raise ValueError(
                 f"Invalid PUPIL_TRACKING_MODE: {self.PUPIL_TRACKING_MODE}. Must be 'CENTROID' or 'ELLIPSE'"
             )
 
-        # Pupil size mode validation
-        if self.PUPIL_SIZE_MODE not in {"AREA", "DIAMETER"}:
+        # Pupil size mode validation (case-insensitive)
+        valid_pupil_size_modes = {"area", "diameter"}
+        if str(self.PUPIL_SIZE_MODE).lower() not in valid_pupil_size_modes:
             raise ValueError(f"Invalid PUPIL_SIZE_MODE: {self.PUPIL_SIZE_MODE}. Must be 'AREA' or 'DIAMETER'")
 
         # Heuristic filter validation
