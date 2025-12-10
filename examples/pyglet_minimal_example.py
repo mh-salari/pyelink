@@ -4,8 +4,6 @@ This example demonstrates the basic usage of pyelink with Pyglet.
 Shows both Option A (direct window access) and Option B (helper methods).
 """
 
-import time
-
 import pyglet
 
 import pyelink as el
@@ -57,7 +55,7 @@ for i in range(5, 0, -1):
     )
     label.draw()
     tracker.window.flip()
-    time.sleep(1)
+    tracker.wait(1)  # Use tracker.wait() instead of time.sleep() to keep event loop active
 
 tracker.stop_recording()
 print("Recording complete!")

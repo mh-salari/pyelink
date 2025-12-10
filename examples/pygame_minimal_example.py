@@ -4,8 +4,6 @@ This example demonstrates the basic usage of pyelink with Pygame.
 Shows both Option A (direct window access) and Option B (helper methods).
 """
 
-import time
-
 import pygame
 
 import pyelink as el
@@ -47,7 +45,7 @@ for i in range(5, 0, -1):
     text_rect = text.get_rect(center=(tracker.window.get_width() // 2, tracker.window.get_height() // 2))
     tracker.window.blit(text, text_rect)
     tracker.flip()
-    time.sleep(1)
+    tracker.wait(1)  # Use tracker.wait() instead of time.sleep() to keep event loop active
 
 tracker.stop_recording()
 print("Recording complete!")
