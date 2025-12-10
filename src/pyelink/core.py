@@ -1330,7 +1330,6 @@ class EyeLink:  # noqa: PLR0904
         # Transfer EDF file (most important - always try to save data)
         with contextlib.suppress(Exception):
             self._transfer_data_file(spath)
-            logger.info("EDF file transferred to: %s", spath)
 
         # Disconnect from tracker
         with contextlib.suppress(Exception):
@@ -1387,10 +1386,16 @@ class EyeLink:  # noqa: PLR0904
         self._close_data_file()
         time.sleep(1)
 
-        # Transfer file
+        # Transfer file - receiveDataFile returns file size or raises exception
         logger.info("Receiving data file: %s -> %s", self.edfname, fpath)
-        self.tracker.receiveDataFile(self.edfname, fpath)
-        logger.info("Data file transfer complete")
+        file_size = self.tracker.receiveDataFile(self.edfname, fpath)
+
+        # Only log success if file was actually transferred
+        if file_size > 0:
+            logger.info("Data file transfer complete (%d bytes)", file_size)
+            logger.info("EDF file transferred to: %s", fpath)
+        else:
+            logger.warning("No data file to transfer (file size: 0)")
 
     def set_status_message(self, message: str) -> None:
         """Set status message to appear on host's screen while recording.
