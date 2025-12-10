@@ -60,11 +60,10 @@ def _generate_fixation_target(settings: object, style: str) -> Image.Image:
         PIL.Image.Image: RGBA image with transparent background.
 
     """
-    # Convert RGB colors to RGBA (add alpha=255 for opaque)
-    center_color = (*settings.FIXATION_CENTER_COLOR, 255)
-    outer_color = (*settings.FIXATION_OUTER_COLOR, 255)
-    # Cross color with alpha=0 makes background transparent
-    cross_color = (*settings.FIXATION_CROSS_COLOR, 0)
+    # Use RGBA colors directly from settings
+    center_color = settings.FIXATION_CENTER_COLOR
+    outer_color = settings.FIXATION_OUTER_COLOR
+    cross_color = settings.FIXATION_CROSS_COLOR
 
     result = fixation_target(
         screen_width_mm=settings.SCREEN_WIDTH,

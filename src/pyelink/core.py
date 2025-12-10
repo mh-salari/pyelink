@@ -80,15 +80,15 @@ class Settings:
     FIXATION_CENTER_DIAMETER: float = defaults.FIXATION_CENTER_DIAMETER  # "A" component (deg visual angle)
     FIXATION_OUTER_DIAMETER: float = defaults.FIXATION_OUTER_DIAMETER  # "B" component (deg visual angle)
     FIXATION_CROSS_WIDTH: float = defaults.FIXATION_CROSS_WIDTH  # "C" component (deg visual angle)
-    FIXATION_CENTER_COLOR: tuple[int, int, int] = defaults.FIXATION_CENTER_COLOR  # RGB black
-    FIXATION_OUTER_COLOR: tuple[int, int, int] = defaults.FIXATION_OUTER_COLOR  # RGB black
-    FIXATION_CROSS_COLOR: tuple[int, int, int] = defaults.FIXATION_CROSS_COLOR  # RGB white
+    FIXATION_CENTER_COLOR: tuple[int, int, int, int] = defaults.FIXATION_CENTER_COLOR  # RGBA
+    FIXATION_OUTER_COLOR: tuple[int, int, int, int] = defaults.FIXATION_OUTER_COLOR  # RGBA
+    FIXATION_CROSS_COLOR: tuple[int, int, int, int] = defaults.FIXATION_CROSS_COLOR  # RGBA
 
     # Circle target settings (for TARGET_TYPE="CIRCLE")
     CIRCLE_OUTER_RADIUS: int = defaults.CIRCLE_OUTER_RADIUS  # Outer radius in pixels
     CIRCLE_INNER_RADIUS: int = defaults.CIRCLE_INNER_RADIUS  # Inner radius in pixels
-    CIRCLE_OUTER_COLOR: tuple[int, int, int] = defaults.CIRCLE_OUTER_COLOR  # RGB black
-    CIRCLE_INNER_COLOR: tuple[int, int, int] = defaults.CIRCLE_INNER_COLOR  # RGB gray
+    CIRCLE_OUTER_COLOR: tuple[int, int, int] = defaults.CIRCLE_OUTER_COLOR  # RGB
+    CIRCLE_INNER_COLOR: tuple[int, int, int] = defaults.CIRCLE_INNER_COLOR  # RGB
 
     # Screen settings (ALL MEASUREMENTS IN MILLIMETERS)
     SCREEN_RES: list[int] = field(default_factory=defaults.SCREEN_RES.copy)  # [width, height] in pixels
@@ -251,12 +251,22 @@ class Settings:
             if not all(isinstance(x, int) and 0 <= x <= 255 for x in color):
                 raise ValueError(f"{name} values must be integers 0-255, got: {color}")
 
-        # Validate all RGB color settings
-        _validate_rgb_color(self.FIXATION_CENTER_COLOR, "FIXATION_CENTER_COLOR")
-        _validate_rgb_color(self.FIXATION_OUTER_COLOR, "FIXATION_OUTER_COLOR")
-        _validate_rgb_color(self.FIXATION_CROSS_COLOR, "FIXATION_CROSS_COLOR")
+        # RGBA color validation helper
+        def _validate_rgba_color(color: tuple, name: str) -> None:
+            if not isinstance(color, tuple) or len(color) != 4:
+                raise ValueError(f"{name} must be a tuple of 4 integers (R, G, B, A), got: {color}")
+            if not all(isinstance(x, int) and 0 <= x <= 255 for x in color):
+                raise ValueError(f"{name} values must be integers 0-255, got: {color}")
+
+        # Validate RGBA color settings (fixation targets)
+        _validate_rgba_color(self.FIXATION_CENTER_COLOR, "FIXATION_CENTER_COLOR")
+        _validate_rgba_color(self.FIXATION_OUTER_COLOR, "FIXATION_OUTER_COLOR")
+        _validate_rgba_color(self.FIXATION_CROSS_COLOR, "FIXATION_CROSS_COLOR")
+
+        # Validate RGB color settings (circle targets and calibration)
         _validate_rgb_color(self.CIRCLE_OUTER_COLOR, "CIRCLE_OUTER_COLOR")
         _validate_rgb_color(self.CIRCLE_INNER_COLOR, "CIRCLE_INNER_COLOR")
+        _validate_rgb_color(self.CAL_BACKGROUND_COLOR, "CAL_BACKGROUND_COLOR")
 
         # Validate fixation target dimensions (must be positive)
         if self.FIXATION_CENTER_DIAMETER <= 0:
@@ -333,16 +343,31 @@ class Settings:
 
         """
         # Convert list color values back to tuples (JSON doesn't preserve tuples)
-        color_fields = [
+        # RGBA fields (fixation targets) - convert RGB to RGBA by adding alpha=255
+        rgba_fields = [
             "FIXATION_CENTER_COLOR",
             "FIXATION_OUTER_COLOR",
             "FIXATION_CROSS_COLOR",
+        ]
+        # RGB fields (circle targets, calibration background) - keep as RGB
+        rgb_fields = [
             "CIRCLE_OUTER_COLOR",
             "CIRCLE_INNER_COLOR",
+            "CAL_BACKGROUND_COLOR",
         ]
 
         processed_dict = config_dict.copy()
-        for field_name in color_fields:
+
+        # Convert RGBA fields (accept 3-tuple and add alpha, or keep 4-tuple)
+        for field_name in rgba_fields:
+            if field_name in processed_dict and isinstance(processed_dict[field_name], list):
+                if len(processed_dict[field_name]) == 3:
+                    processed_dict[field_name] = (*tuple(processed_dict[field_name]), 255)
+                else:
+                    processed_dict[field_name] = tuple(processed_dict[field_name])
+
+        # Convert RGB fields (must be 3-tuple)
+        for field_name in rgb_fields:
             if field_name in processed_dict and isinstance(processed_dict[field_name], list):
                 processed_dict[field_name] = tuple(processed_dict[field_name])
 

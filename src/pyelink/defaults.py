@@ -47,9 +47,9 @@ CAL_BACKGROUND_COLOR = (128, 128, 128)  # RGB gray background for calibration
 FIXATION_CENTER_DIAMETER = 0.1  # "A" component (deg visual angle)
 FIXATION_OUTER_DIAMETER = 0.6  # "B" component (deg visual angle)
 FIXATION_CROSS_WIDTH = 0.17  # "C" component (deg visual angle)
-FIXATION_CENTER_COLOR = (0, 0, 0)  # RGB black
-FIXATION_OUTER_COLOR = (0, 0, 0)  # RGB black
-FIXATION_CROSS_COLOR = (255, 255, 255)  # RGB white
+FIXATION_CENTER_COLOR = (0, 0, 0, 255)  # RGBA black, fully opaque
+FIXATION_OUTER_COLOR = (0, 0, 0, 255)  # RGBA black, fully opaque
+FIXATION_CROSS_COLOR = (255, 255, 255, 255)  # RGBA white, fully opaque
 
 # Circle target settings (for TARGET_TYPE="CIRCLE")
 CIRCLE_OUTER_RADIUS = 15  # Outer radius in pixels
