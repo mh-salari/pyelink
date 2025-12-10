@@ -1348,7 +1348,18 @@ class EyeLink:  # noqa: PLR0904
     def _open_data_file(self) -> None:
         """Open EDF data file on the tracker."""
         self._ensure_connected()
-        self.tracker.openDataFile(self.edfname)
+        try:
+            self.tracker.openDataFile(self.edfname)
+        except RuntimeError as e:
+            msg = str(e)
+            if "Unexpected end of line" in msg or "openDataFile" in msg:
+                logger.error("Could not open EDF file %s. Likely invalid filename.", self.edfname)  # noqa: TRY400
+                logger.error(  # noqa: TRY400
+                    "EyeLink EDF filenames must be ≤8 characters, alphanumeric or underscore, and not contain spaces or special characters."
+                )
+                sys.exit(1)
+            else:
+                raise
         logger.info("Data file opened: %s", self.edfname)
 
     def is_recording(self) -> bool:
