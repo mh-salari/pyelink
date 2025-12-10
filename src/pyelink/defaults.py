@@ -41,6 +41,7 @@ VALIDATION_AREA_PROPORTION = [0.9, 0.9]  # [width, height] as proportion of scre
 # =============================================================================
 TARGET_TYPE = "ABC"  # "ABC", "AB", "A", "B", "C", "CIRCLE", or "IMAGE" (see docs)
 TARGET_IMAGE_PATH = None  # Path to image file (for TARGET_TYPE="IMAGE")
+CAL_BACKGROUND_COLOR = (128, 128, 128)  # RGB gray background for calibration
 
 # Fixation target settings (for A/B/C/AB/ABC types)
 FIXATION_CENTER_DIAMETER = 0.1  # "A" component (deg visual angle)
@@ -78,17 +79,13 @@ SET_HEURISTIC_FILTER = True  # Activate filter or not (must be set every time re
 
 
 # =============================================================================
-# DATA FILTER SETTINGS
+# RECORDING SETTINGS and CONTENT of EDF FILE
 # =============================================================================
 FILE_EVENT_FILTER = "LEFT,RIGHT,MESSAGE,BUTTON,INPUT"  # Which events to record to file
 LINK_EVENT_FILTER = "LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,INPUT"  # Over link
 LINK_SAMPLE_DATA = "LEFT,RIGHT,GAZE,GAZERES,AREA,STATUS,HTARGET"  # Sample fields over link
 FILE_SAMPLE_DATA = "LEFT,RIGHT,GAZE,GAZERES,AREA,HREF,PUPIL,STATUS,INPUT,HMARKER,HTARGET"  # To file
 
-
-# =============================================================================
-# RECORDING SETTINGS
-# =============================================================================
 RECORD_SAMPLES_TO_FILE = 1  # 1=on, 0=off
 RECORD_EVENTS_TO_FILE = 1  # 1=on, 0=off
 RECORD_SAMPLE_OVER_LINK = 1  # 1=on, 0=off
@@ -96,10 +93,18 @@ RECORD_EVENT_OVER_LINK = 1  # 1=on, 0=off
 
 
 # =============================================================================
+# DISPLAY SETTINGS
+# =============================================================================
+BACKEND = "pygame"  # Visualization backend: "pygame", "psychopy", or "pyglet"
+FULLSCREEN = True  # True for fullscreen window, False for windowed mode
+DISPLAY_INDEX = 0  # Monitor index: 0=primary, 1=secondary, etc.
+
+
+# =============================================================================
 # HARDWARE SETTINGS
 # =============================================================================
-ENABLE_SEARCH_LIMITS = "OFF"  # ON (default) or OFF
+ENABLE_SEARCH_LIMITS = "ON"  # ON (default) or OFF
 ILLUMINATION_POWER = 2  # 'elcl_tt_power' setting: 1=100%, 2=75%, 3=50%
 HOST_IP = "100.1.1.1"  # IP address of EyeLink Host PC
 EL_CONFIGURATION = "BTABLER"  # Options: MTABLER, BTABLER, RTABLER, RBTABLER, AMTABLER, ARTABLER, BTOWER
-EYE_TRACKED = "Both"  # BOTH/LEFT/RIGHT. Sets binocular_enabled=YES for both, or active_eye=LEFT/RIGHT for monocular
+EYE_TRACKED = "BOTH"  # BOTH/LEFT/RIGHT. Sets binocular_enabled=YES for both, or active_eye=LEFT/RIGHT for monocular

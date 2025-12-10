@@ -18,24 +18,23 @@ logger = logging.getLogger(__name__)
 class PygameCalibrationDisplay(CalibrationDisplay):
     """Pygame implementation of EyeLink calibration display."""
 
-    def __init__(self, settings: object, tracker: object, window: object) -> None:
+    def __init__(self, settings: object, tracker: object) -> None:
         """Initialize pygame calibration display.
 
         Args:
             settings: Settings object with configuration
-            tracker: EyeLink tracker instance
-            window: pygame.Surface object (the display surface)
+            tracker: EyeLink tracker instance (with display.window attribute)
 
         """
         super().__init__(settings, tracker)
         self.settings = settings
 
-        # Store the pygame display surface
-        self.window = window
-        self.width, self.height = window.get_size()
+        # Get pygame display surface from tracker
+        self.window = tracker.display.window
+        self.width, self.height = self.window.get_size()
 
         # Colors
-        self.backcolor = (128, 128, 128)  # Gray background
+        self.backcolor = settings.CAL_BACKGROUND_COLOR
         self.forecolor = (0, 0, 0)  # Black foreground
         logger.info("PygameCalibrationDisplay initialized.")
 
@@ -143,12 +142,7 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         }
 
         for event in pygame.event.get(pygame.KEYDOWN):
-            # Check Ctrl+Q for exit - send ESC key
-            if event.key == pygame.K_q and (event.mod & pygame.KMOD_CTRL):
-                ky.append(pylink.KeyInput(pylink.ESC_KEY, 0))
-                continue
-
-            # Then, do a lookup in the general key map
+            # Lookup key in the general key map
             pylink_key = key_map.get(event.key)
             if pylink_key is not None:
                 ky.append(pylink.KeyInput(pylink_key, 0))

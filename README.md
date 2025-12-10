@@ -46,28 +46,35 @@ pip install --index-url=https://pypi.sr-support.com sr-research-pylink
 
 ```python
 import pyelink as el
-from psychopy import visual
 
-# Create your experiment window
-win = visual.Window(size=[1920, 1080], fullscr=True)
-
-# Configure tracker
+# Configure tracker with backend
 settings = el.Settings()
+settings.BACKEND = 'pygame'  # or 'psychopy', 'pyglet'
+settings.FULLSCREEN = True
 settings.SCREEN_RES = [1920, 1080]
+
+# Tracker creates and owns the window
 tracker = el.EyeLink(settings)
 
-# Create calibration (auto-detects backend from window type)
-calibration = el.create_calibration(settings, tracker, win)
+# Calibrate (no parameters needed!)
+tracker.calibrate()
 
-# Calibrate
-tracker.calibrate(calibration)
+# Option A: Direct window access for custom drawing
+tracker.window.fill((128, 128, 128))
+# ... backend-specific drawing ...
+tracker.flip()
 
-# Run your experiment with the same window
+# Option B: Helper methods for common patterns
+tracker.show_message("Press SPACE to begin")
+tracker.wait_for_key('space')
+
+# Run your experiment
+tracker.start_recording()
 # ... show stimuli, collect data ...
+tracker.stop_recording()
 
-# Clean up
+# Clean up (closes window automatically)
 tracker.end_experiment('./')
-win.close()
 ```
 
 ## Development

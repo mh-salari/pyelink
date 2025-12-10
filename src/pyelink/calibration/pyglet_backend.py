@@ -10,7 +10,6 @@ import numpy as np
 import pyglet
 import pylink
 from PIL import Image
-from pyglet.window import key
 
 from .base import CalibrationDisplay
 from .targets import generate_target
@@ -21,28 +20,27 @@ logger = logging.getLogger(__name__)
 class PygletCalibrationDisplay(CalibrationDisplay):
     """Pyglet implementation of EyeLink calibration display."""
 
-    def __init__(self, settings: object, tracker: object, window: object) -> None:
+    def __init__(self, settings: object, tracker: object) -> None:
         """Initialize pyglet calibration display.
 
         Args:
             settings: Settings object with configuration
-            tracker: EyeLink tracker instance
-            window: pyglet.window.Window object
+            tracker: EyeLink tracker instance (with display.window attribute)
 
         """
         super().__init__(settings, tracker)
         self.settings = settings
 
-        # Store the pyglet window
-        self.window = window
-        self.width = window.width
-        self.height = window.height
+        # Get pyglet window from tracker
+        self.window = tracker.display.window
+        self.width = self.window.width
+        self.height = self.window.height
 
         # Create batch for efficient rendering
         self.batch = pyglet.graphics.Batch()
 
         # Colors (RGBA)
-        self.backcolor = (128, 128, 128, 255)  # Gray background
+        self.backcolor = (*settings.CAL_BACKGROUND_COLOR, 255)
         self.forecolor = (0, 0, 0, 255)  # Black foreground
 
         # Generate target image (convert to pyglet via in-memory bytes)
@@ -64,13 +62,8 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         self.image_sprite = None
         self.__img__ = None  # Current PIL image being processed
 
-        # Keyboard state
-        self.keys_pressed = []  # List of (symbol, modifiers) tuples
-
-        # Set up keyboard handler
-        @window.event
-        def on_key_press(symbol: int, modifiers: int) -> None:
-            self.keys_pressed.append((symbol, modifiers))
+        # Store tracker reference to access display events
+        self.tracker = tracker
 
     def _clear_window(self) -> None:
         """Clear the window with background color."""
@@ -163,43 +156,36 @@ class PygletCalibrationDisplay(CalibrationDisplay):
             list: List of pylink.KeyInput objects
 
         """
-        # Process pyglet events
-        self.window.dispatch_events()
+        # Get events from the display backend (which handles dispatch_events internally)
+        events = self.tracker.display.get_events()
 
         ky = []
 
-        # Map pyglet key symbols to pylink key constants
-        key_map = {
-            key.ESCAPE: pylink.ESC_KEY,
-            key.RETURN: pylink.ENTER_KEY,
-            key.ENTER: pylink.ENTER_KEY,
-            key.SPACE: ord(" "),
-            key.C: ord("c"),
-            key.V: ord("v"),
-            key.A: ord("a"),
-            key.PAGEUP: pylink.PAGE_UP,
-            key.PAGEDOWN: pylink.PAGE_DOWN,
-            key.MINUS: ord("-"),
-            key.EQUAL: ord("="),
-            key.UP: pylink.CURS_UP,
-            key.DOWN: pylink.CURS_DOWN,
-            key.LEFT: pylink.CURS_LEFT,
-            key.RIGHT: pylink.CURS_RIGHT,
+        # Map key names from display backend to pylink key constants
+        key_name_map = {
+            "escape": pylink.ESC_KEY,
+            "return": pylink.ENTER_KEY,
+            "enter": pylink.ENTER_KEY,
+            "space": ord(" "),
+            "c": ord("c"),
+            "v": ord("v"),
+            "a": ord("a"),
+            "pageup": pylink.PAGE_UP,
+            "pagedown": pylink.PAGE_DOWN,
+            "minus": ord("-"),
+            "equal": ord("="),
+            "up": pylink.CURS_UP,
+            "down": pylink.CURS_DOWN,
+            "left": pylink.CURS_LEFT,
+            "right": pylink.CURS_RIGHT,
         }
 
-        for symbol, modifiers in self.keys_pressed:
-            # Check Ctrl+Q for exit - send ESC key
-            if symbol == key.Q and (modifiers & key.MOD_CTRL):
-                ky.append(pylink.KeyInput(pylink.ESC_KEY, 0))
-                continue
-
-            # Then, do a lookup in the general key map
-            pylink_key = key_map.get(symbol)
-            if pylink_key is not None:
-                ky.append(pylink.KeyInput(pylink_key, 0))
-
-        # Clear processed keys
-        self.keys_pressed.clear()
+        for event in events:
+            if event.get("type") == "keydown":
+                key_name = event.get("key", "").lower()
+                pylink_key = key_name_map.get(key_name)
+                if pylink_key is not None:
+                    ky.append(pylink.KeyInput(pylink_key, 0))
 
         return ky
 
@@ -300,10 +286,11 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         label.draw()
         self.window.flip()
 
-        # Wait for key press
-        self.keys_pressed.clear()
-        while not self.keys_pressed:
-            self.window.dispatch_events()
-
-        self._clear_window()
-        self.window.flip()
+        # Wait for key press using display backend events
+        while True:
+            events = self.tracker.display.get_events()
+            for event in events:
+                if event.get("type") == "keydown":
+                    self._clear_window()
+                    self.window.flip()
+                    return

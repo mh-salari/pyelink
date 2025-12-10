@@ -1,32 +1,41 @@
 """PyELink - Multi-backend Python wrapper for SR Research EyeLink eye trackers.
 
 This package provides a clean, modern interface for EyeLink eye tracking with support
-for multiple visualization backends (PsychoPy, pygame, pyglet).
+for multiple visualization backends (pygame, PsychoPy, pyglet).
+
+The tracker creates and owns the display window throughout the experiment.
+Users can access the window directly (Option A) or use helper methods (Option B).
 
 Example:
     >>> import pyelink as el
-    >>> from psychopy import visual
     >>>
-    >>> # Create your experiment window
-    >>> win = visual.Window(size=[1920, 1080], fullscr=True)
-    >>>
-    >>> # Configure tracker
+    >>> # Configure tracker with backend
     >>> settings = el.Settings()
+    >>> settings.BACKEND = 'pygame'  # or 'psychopy', 'pyglet'
+    >>> settings.FULLSCREEN = True
     >>> settings.SCREEN_RES = [1920, 1080]
+    >>>
+    >>> # Tracker creates window automatically
     >>> tracker = el.EyeLink(settings)
     >>>
-    >>> # Create calibration (auto-detects backend from window type)
-    >>> calibration = el.create_calibration(settings, tracker, win)
+    >>> # Calibrate (no parameters needed!)
+    >>> tracker.calibrate()
     >>>
-    >>> # Calibrate
-    >>> tracker.calibrate(calibration)
+    >>> # Option A: Direct window access
+    >>> tracker.window.fill((128, 128, 128))
+    >>> tracker.flip()
     >>>
-    >>> # Run your experiment with the same window
+    >>> # Option B: Helper methods
+    >>> tracker.show_message("Press SPACE to begin")
+    >>> tracker.wait_for_key('space')
+    >>>
+    >>> # Run your experiment
+    >>> tracker.start_recording()
     >>> # ... show stimuli, collect data ...
+    >>> tracker.stop_recording()
     >>>
-    >>> # Clean up
+    >>> # Clean up (closes window automatically)
     >>> tracker.end_experiment('./')
-    >>> win.close()
 
 Attribution:
     Based on code by Marcus Nyström (Lund University Humanities Lab)

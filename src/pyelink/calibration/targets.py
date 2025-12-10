@@ -82,6 +82,7 @@ def _generate_fixation_target(settings: object, style: str) -> Image.Image:
         save_png=False,
         save_svg=False,
         show=False,
+        log=False,
     )
 
     return result["image"]

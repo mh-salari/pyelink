@@ -136,96 +136,47 @@ def get_backend(name: str | None = None) -> object:
     return backend
 
 
-def _detect_backend_from_window(window: object) -> str | None:
-    """Auto-detect backend from window type.
-
-    Args:
-        window: Window object (PsychoPy Window, pygame Surface, or pyglet Window)
-
-    Returns:
-        str | None: Backend name ('psychopy', 'pygame', 'pyglet') or None if unknown
-
-    """
-    # Check window's module to detect library
-    window_module = type(window).__module__
-    window_class = type(window).__name__
-
-    # PsychoPy detection
-    if "psychopy" in window_module or (window_class == "Window" and hasattr(window, "flip")):
-        return "psychopy"
-
-    # pygame detection
-    if "pygame" in window_module or window_class == "Surface":
-        return "pygame"
-
-    # pyglet detection
-    if "pyglet" in window_module or (window_class == "Window" and hasattr(window, "dispatch_events")):
-        return "pyglet"
-
-    return None
-
-
-def create_calibration(settings: object, tracker: object, window: object, backend: str | None = None) -> object:
+def create_calibration(settings: object, tracker: object) -> object:
     """Factory function to create calibration display.
 
-    Automatically detects the backend from the window type if not explicitly specified.
-    The window you pass here is YOUR experiment window - it stays open for the entire
-    experiment duration (calibration + trials).
+    Uses the tracker's internal window (created based on settings.BACKEND).
+    The calibration display accesses the window via tracker.display.window.
 
     Args:
-        settings: Settings object with configuration
-        tracker: EyeLink tracker instance
-        window: Display window object - YOUR experiment window that stays open
-                - PsychoPy: visual.Window()
-                - pygame: pygame.display.set_mode() or Surface
-                - pyglet: pyglet.window.Window()
-        backend: Backend name ('pygame', 'psychopy', 'pyglet') or None for auto-detect
-                If None, automatically detects from window type
+        settings: Settings object with configuration (includes BACKEND setting)
+        tracker: EyeLink tracker instance (with display.window)
 
     Returns:
-        CalibrationDisplay instance that wraps your window for calibration
+        CalibrationDisplay instance using tracker's internal window
 
     Example:
         >>> import pyelink as el
-        >>> from psychopy import visual
         >>>
-        >>> # Create YOUR window once (stays open for entire experiment)
-        >>> win = visual.Window(size=[1920, 1080], fullscr=True)
+        >>> # Configure tracker with backend
+        >>> settings = el.Settings(BACKEND='pygame', FULLSCREEN=True)
+        >>> tracker = el.EyeLink(settings)  # Creates window automatically
         >>>
-        >>> # Setup tracker
-        >>> settings = el.Settings()
-        >>> tracker = el.EyeLink(settings)
-        >>>
-        >>> # Auto-detect backend from window type (recommended)
-        >>> calibration = el.create_calibration(settings, tracker, win)
+        >>> # Create calibration (uses tracker's window)
+        >>> calibration = el.create_calibration(settings, tracker)
         >>>
         >>> # Calibrate
         >>> tracker.calibrate(calibration)
         >>>
-        >>> # Continue using YOUR window for experiment
-        >>> # ... show stimuli, run trials, etc. ...
-        >>> win.close()  # Close at end of experiment
+        >>> # Use tracker's window for experiment
+        >>> tracker.window.fill((128, 128, 128))
+        >>> tracker.flip()
 
     Note:
-        The calibration object doesn't own or manage the window - it just wraps it
-        for EyeLink calibration. You retain full control of your window.
+        The calibration uses the tracker's owned window. No separate window
+        management needed - tracker handles window lifecycle.
 
     """
-    # Auto-detect backend from window type if not specified
-    if backend is None:
-        backend = _detect_backend_from_window(window)
-        if backend is None:
-            raise ValueError(
-                "Could not auto-detect backend from window type. "
-                "Please specify backend explicitly:\n"
-                "  create_calibration(settings, tracker, window, backend='psychopy')\n"
-                "  create_calibration(settings, tracker, window, backend='pygame')\n"
-                "  create_calibration(settings, tracker, window, backend='pyglet')"
-            )
-        logger.info("Auto-detected backend: %s", backend)
+    # Get backend from settings
+    backend = settings.BACKEND
+    logger.info("Creating calibration display for backend: %s", backend)
 
     calibration_class = get_backend(backend)
-    return calibration_class(settings, tracker, window)
+    return calibration_class(settings, tracker)
 
 
 __all__ = [

@@ -20,32 +20,31 @@ logger = logging.getLogger(__name__)
 class PsychopyCalibrationDisplay(CalibrationDisplay):
     """PsychoPy implementation of EyeLink calibration display."""
 
-    def __init__(self, settings: object, tracker: object, window: object) -> None:
+    def __init__(self, settings: object, tracker: object) -> None:
         """Initialize PsychoPy calibration display.
 
         Args:
             settings: Settings object with configuration
-            tracker: EyeLink tracker instance
-            window: PsychoPy visual.Window object
+            tracker: EyeLink tracker instance (with display.window attribute)
 
         """
         super().__init__(settings, tracker)
         self.settings = settings
 
-        # Set up window (user's experiment window)
-        self.window = window
+        # Get PsychoPy window from tracker
+        self.window = tracker.display.window
         self.window.flip(clearBuffer=True)
         self.mouse = None
-        self.width, self.height = window.size
+        self.width, self.height = self.window.size
 
         # Store original background color and set calibration colors
-        # Use consistent gray background (0 in PsychoPy = 128/255 = gray)
-        # and black text (-1 in PsychoPy = 0/255 = black)
-        self.original_color = window.color
-        self.backcolor = [0, 0, 0]  # Gray in PsychoPy (-1 to 1 range)
+        # Convert RGB (0-255) to PsychoPy range (-1 to 1)
+        self.original_color = self.window.color
+        rgb = settings.CAL_BACKGROUND_COLOR
+        self.backcolor = [(c / 255.0) * 2 - 1 for c in rgb]
         self.txtcol = [-1, -1, -1]  # Black text
 
-        # Set window to gray for calibration
+        # Set window to calibration background color
         self.window.color = self.backcolor
 
         # Generate target image (pass PIL image directly - PsychoPy handles it properly)
@@ -147,17 +146,11 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
         for key_info in v:
             # key_info is (key_name, modifiers_dict) or just key_name
             if isinstance(key_info, tuple):
-                char, mods = key_info
+                char, _mods = key_info
             else:
                 char = key_info
-                mods = {}
 
-            # Check Ctrl+Q for exit - send ESC key
-            if char == "q" and mods.get("ctrl", False):
-                ky.append(pylink.KeyInput(pylink.ESC_KEY, 0))
-                continue
-
-            # Then, do a lookup in the general key map
+            # Lookup key in the general key map
             pylink_key = key_map.get(char)
             if pylink_key is not None:
                 ky.append(pylink.KeyInput(pylink_key, 0))

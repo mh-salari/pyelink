@@ -28,7 +28,7 @@ classifiers = [
 # Users MUST choose: pip install pyelink[pygame], pyelink[psychopy], or pyelink[pyglet]
 dependencies = [
     "numpy>=1.20.0,<2.3.0", # psychopy requires numpy < 2.3.0
-    "fixation-target>=1.4.0", # For generating calibration targets
+    "fixation-target>=1.4.2", # For generating calibration targets
     "sounddevice>=0.5.3",
 ]
 

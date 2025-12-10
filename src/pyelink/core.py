@@ -11,6 +11,8 @@ import atexit
 import contextlib
 import json
 import logging
+import os
+import signal
 import sys
 import time
 from dataclasses import asdict, dataclass, field
@@ -20,6 +22,7 @@ from typing import TYPE_CHECKING, Any, Self
 import pylink
 
 from . import defaults
+from .calibration import create_calibration
 from .data import DataBuffer
 from .events import EventProcessor
 
@@ -27,6 +30,15 @@ if TYPE_CHECKING:
     import types
 
 logger = logging.getLogger(__name__)
+
+# Configure logging to output to console by default
+if not logger.handlers:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(levelname)s: %(message)s")
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    logger.setLevel(logging.INFO)
 
 
 @dataclass
@@ -62,6 +74,7 @@ class Settings:
     # Target settings
     TARGET_TYPE: str = defaults.TARGET_TYPE  # "ABC", "AB", "A", "B", "C", "CIRCLE", or "IMAGE" (see docs)
     TARGET_IMAGE_PATH: str | None = defaults.TARGET_IMAGE_PATH  # Path to image file (for TARGET_TYPE="IMAGE")
+    CAL_BACKGROUND_COLOR: tuple[int, int, int] = defaults.CAL_BACKGROUND_COLOR  # RGB background color for calibration
 
     # Fixation target settings (for A/B/C/AB/ABC types)
     FIXATION_CENTER_DIAMETER: float = defaults.FIXATION_CENTER_DIAMETER  # "A" component (deg visual angle)
@@ -88,6 +101,11 @@ class Settings:
         default_factory=lambda: defaults.VIEWING_DIST_TOP_BOTTOM.copy() if defaults.VIEWING_DIST_TOP_BOTTOM else None
     )  # [top_mm, bottom_mm] for parser output (optional)
     REMOTE_LENS: int | None = defaults.REMOTE_LENS  # Remote mode lens focal length in mm (optional)
+
+    # Display settings
+    BACKEND: str = defaults.BACKEND  # Visualization backend: "pygame", "psychopy", or "pyglet"
+    FULLSCREEN: bool = defaults.FULLSCREEN  # True for fullscreen window, False for windowed mode
+    DISPLAY_INDEX: int = defaults.DISPLAY_INDEX  # Monitor index: 0=primary, 1=secondary, etc.
 
     # Tracking settings
     PUPIL_TRACKING_MODE: str = defaults.PUPIL_TRACKING_MODE  # "CENTROID" or "ELLIPSE"
@@ -263,6 +281,15 @@ class Settings:
         if self.REMOTE_LENS is not None and self.REMOTE_LENS <= 0:
             raise ValueError(f"REMOTE_LENS must be positive or None, got: {self.REMOTE_LENS}")
 
+        # Backend validation
+        valid_backends = {"pygame", "psychopy", "pyglet"}
+        if self.BACKEND not in valid_backends:
+            raise ValueError(f"Invalid BACKEND: {self.BACKEND}. Must be one of: {', '.join(sorted(valid_backends))}")
+
+        # Display index validation (must be non-negative integer)
+        if not isinstance(self.DISPLAY_INDEX, int) or self.DISPLAY_INDEX < 0:
+            raise ValueError(f"DISPLAY_INDEX must be a non-negative integer, got: {self.DISPLAY_INDEX}")
+
     def to_dict(self) -> dict[str, Any]:
         """Convert settings to a dictionary.
 
@@ -382,28 +409,51 @@ def _cleanup_on_exit() -> None:
 
 
 class EyeLink:  # noqa: PLR0904
-    """Unified EyeLink tracker interface.
+    """Unified EyeLink tracker interface with integrated display management.
 
     This class provides a complete interface for interacting with SR Research
-    EyeLink eye trackers. It combines hardware connection, recording management,
-    data access, and configuration in a single unified class.
+    EyeLink eye trackers. It combines hardware connection, display window management,
+    recording, data access, and configuration in a single unified class.
+
+    The tracker creates and owns the display window throughout the experiment.
+    Users can access the window directly via tracker.window (Option A) or use
+    backend-agnostic helper methods (Option B).
+
+    Graceful shutdown: Press Ctrl+C at any time (including during calibration)
+    to automatically stop recording, close the window, save data, and disconnect.
 
     This class uses two-phase initialization to separate object construction
     from I/O operations:
     - __init__: Sets up the object state (no side effects)
-    - connect(): Performs network connection and file operations
+    - connect(): Performs network connection, file operations, and creates display window
 
     Example:
-        settings = Settings()
-        el = EyeLink(settings)  # Auto-connects by default
+        settings = Settings(BACKEND='pygame', FULLSCREEN=True)
+        tracker = EyeLink(settings)  # Auto-connects and creates window
+
+        # Option A: Direct window access
+        tracker.window.fill((128, 128, 128))
+        tracker.flip()
+
+        # Option B: Backend-agnostic helpers
+        tracker.fill((128, 128, 128))
+        tracker.display.draw_text("Fixate", center=True)
+        tracker.flip()
+
+        # Ctrl+C at any point will gracefully shut down and save data
+
+    Dummy mode (for testing without hardware):
+        settings = Settings(BACKEND='pygame', HOST_IP='dummy')
+        tracker = EyeLink(settings)  # Creates window in dummy mode
+        # Full window functionality available for development/testing
 
     Or use two-phase initialization:
-        el = EyeLink(settings, auto_connect=False)
-        el.connect()  # Connect when ready
+        tracker = EyeLink(settings, auto_connect=False)
+        tracker.connect()  # Connect and create window when ready
 
     Or use as a context manager:
-        with EyeLink(settings) as el:
-            # use tracker
+        with EyeLink(settings) as tracker:
+            # use tracker and window
             pass  # auto-cleanup
 
     """
@@ -455,23 +505,73 @@ class EyeLink:  # noqa: PLR0904
         # Components (will be initialized in connect())
         self.data = None
         self.events = None
+        self.display = None
+
+        # Store data save path for Ctrl+C cleanup
+        self._data_save_path = settings.FILEPATH or "./"
 
         # Connect immediately if auto_connect is True
         if auto_connect:
             self.connect()
 
         # Register end_experiment with atexit for automatic cleanup
-        atexit.register(lambda: self.end_experiment(self.settings.FILEPATH or "./"))
+        atexit.register(lambda: self.end_experiment(self._data_save_path))
+
+        # Set up Ctrl+C signal handler for graceful shutdown
+        # This handles both terminal focus (SIGINT) and window focus (called by display backends)
+        signal.signal(signal.SIGINT, self._signal_handler)
+
+    def set_data_save_path(self, path: str) -> None:
+        """Update the path where EDF file will be saved on cleanup.
+
+        This path is used when Ctrl+C is pressed or when end_experiment() is called
+        without a path argument.
+
+        Args:
+            path: Directory path where EDF file should be saved (include trailing slash)
+
+        Example:
+            tracker.set_data_save_path("./data/session1/")
+
+        """
+        self._data_save_path = path
+        logger.info("Data save path updated to: %s", path)
+
+    def _signal_handler(self, signum: int, frame: object) -> None:  # noqa: ARG002
+        """Handle Ctrl+C for graceful shutdown.
+
+        This handler is called in two scenarios:
+        1. Terminal has focus: OS sends SIGINT signal
+        2. Window has focus: Display backend detects Ctrl+C and calls this directly
+
+        Ensures that pressing Ctrl+C at any point during the experiment
+        (including during calibration) will:
+        1. Stop recording if active
+        2. Close the display window
+        3. Save the EDF file to the configured path
+        4. Disconnect from the tracker
+        5. Exit the program
+
+        Args:
+            signum: Signal number (SIGINT) or None if called by display backend
+            frame: Current stack frame (unused) or None if called by display backend
+
+        """
+        logger.critical("Ctrl+C detected - shutting down gracefully...")
+        self.end_experiment(self._data_save_path)
+        logger.critical("Cleanup complete. Exiting.")
+        os._exit(0)
 
     def connect(self) -> None:
         """Connect to tracker and initialize all components.
 
         This method performs all I/O operations including:
-        - Network connection to tracker
+        - Network connection to tracker (or dummy mode if HOST_IP is None/'dummy')
         - Opening the EDF data file
         - Setting tracker to offline mode
         - Initializing data buffers and event processors
         - Configuring tracker settings
+        - Creating display window (works in both real and dummy mode)
 
         Call this manually if auto_connect=False was used.
         """
@@ -504,7 +604,7 @@ class EyeLink:  # noqa: PLR0904
                     is_connected = False
             except RuntimeError:
                 # User-facing troubleshooting messages - not exception logging
-                logger.error("%s\nERROR: Could not connect to EyeLink tracker!\n%s", "=" * 60, "=" * 60)  # noqa: TRY400
+                logger.error("ERROR: Could not connect to EyeLink tracker!")  # noqa: TRY400
                 logger.error("Current Host PC IP setting: %s", self.settings.HOST_IP)  # noqa: TRY400
                 logger.error("Please check:")  # noqa: TRY400
                 logger.error("  1. EyeLink Host PC is powered on")  # noqa: TRY400
@@ -565,6 +665,12 @@ class EyeLink:  # noqa: PLR0904
         # Setup the EDF-file such that it adds 'raw' data
         self._setup_raw_data_recording(enable=self.record_raw_data)
 
+        # Create display window (works in both real and dummy mode)
+        mode_str = "dummy mode" if not self.realconnect else "real tracker"
+        logger.info("Creating %s display window (%s)...", self.settings.BACKEND, mode_str)
+        self.display = self._create_display(self.settings.BACKEND)
+        logger.info("Display window created on monitor %d", self.settings.DISPLAY_INDEX)
+
         self._connected = True
         logger.info("EyeLink connected and configured")
 
@@ -613,6 +719,267 @@ class EyeLink:  # noqa: PLR0904
         """Ensure tracker is cleaned up on deletion (safety net)."""
         with contextlib.suppress(Exception):
             self.end_experiment(self.settings.FILEPATH or "./")
+
+    def _create_display(self, backend_name: str) -> object:
+        """Create display window based on backend name.
+
+        Uses lazy importing to only load the backend that's actually installed.
+
+        Args:
+            backend_name: Backend identifier ("pygame", "psychopy", or "pyglet")
+
+        Returns:
+            Display instance (PygameDisplay, PsychopyDisplay, or PygletDisplay)
+
+        Raises:
+            ImportError: If backend not installed
+            ValueError: If backend name invalid
+
+        """
+        if backend_name == "pygame":
+            from .display.pygame_display import PygameDisplay  # noqa: PLC0415
+
+            return PygameDisplay(self.settings, shutdown_handler=self._signal_handler)
+        if backend_name == "psychopy":
+            from .display.psychopy_display import PsychopyDisplay  # noqa: PLC0415
+
+            return PsychopyDisplay(self.settings, shutdown_handler=self._signal_handler)
+        if backend_name == "pyglet":
+            from .display.pyglet_display import PygletDisplay  # noqa: PLC0415
+
+            return PygletDisplay(self.settings, shutdown_handler=self._signal_handler)
+        raise ValueError(
+            f"Invalid backend: {backend_name}. Must be 'pygame', 'psychopy', or 'pyglet'. "
+            f"Install with: uv pip install -e '.[{backend_name}]'"
+        )
+
+    @property
+    def window(self) -> object:
+        """Get raw backend window object for direct access (Option A).
+
+        Returns:
+            Backend-specific window:
+            - pygame: pygame.Surface
+            - psychopy: psychopy.visual.Window
+            - pyglet: pyglet.window.Window
+
+        Example:
+            # Direct pygame access
+            tracker.window.fill((128, 128, 128))
+            tracker.window.blit(my_surface, (x, y))
+
+        """
+        if self.display is None:
+            raise RuntimeError("Display not created. Call connect() first or use auto_connect=True in __init__")
+        return self.display.window
+
+    def flip(self) -> None:
+        """Update display to show drawn content.
+
+        Convenience method that delegates to display.flip().
+        """
+        if self.display is not None:
+            self.display.flip()
+
+    def fill(self, color: tuple[int, int, int]) -> None:
+        """Fill window with specified RGB color.
+
+        Convenience method that delegates to display.fill().
+
+        Args:
+            color: RGB tuple (0-255, 0-255, 0-255)
+
+        """
+        if self.display is not None:
+            self.display.fill(color)
+
+    def clear(self) -> None:
+        """Clear window to black.
+
+        Convenience method that delegates to display.clear().
+        """
+        if self.display is not None:
+            self.display.clear()
+
+    def wait_for_key(self, key: str | None = None, timeout: float | None = None) -> str | None:
+        """Wait for keyboard input (Option B helper).
+
+        Args:
+            key: Specific key to wait for (e.g., 'space', 'return'), or None for any key
+            timeout: Maximum time to wait in seconds, or None to wait indefinitely
+
+        Returns:
+            Key name that was pressed, or None if timeout
+
+        Example:
+            tracker.show_message("Press SPACE to continue")
+            tracker.wait_for_key('space')
+
+        """
+        if self.display is not None:
+            return self.display.wait_for_key(key, timeout)
+        return None
+
+    def wait(self, duration: float) -> None:
+        """Wait for specified duration while handling UI events.
+
+        Prevents event queue buildup during delays.
+
+        Args:
+            duration: Time to wait in seconds
+
+        Example:
+            tracker.show_message("Get ready...")
+            tracker.wait(2.0)
+
+        """
+        if self.display is not None:
+            self.display.wait(duration)
+
+    def show_message(
+        self,
+        text: str,
+        duration: float | None = None,
+        bg_color: tuple[int, int, int] = (128, 128, 128),
+        text_color: tuple[int, int, int] = (255, 255, 255),
+        text_size: int = 32,
+    ) -> None:
+        """Display text message centered on screen (Option B helper).
+
+        Args:
+            text: Message to display
+            duration: Time to display in seconds, or None to display without waiting
+            bg_color: Background RGB color (default: gray (128, 128, 128))
+            text_color: Text RGB color (default: white (255, 255, 255))
+            text_size: Font size in points (default: 32)
+
+        Example:
+            tracker.show_message("Press SPACE when ready")
+            tracker.wait_for_key('space')
+
+            # Or with auto-wait:
+            tracker.show_message("Get ready...", duration=2.0)
+
+            # Custom colors:
+            tracker.show_message(
+                "Error!",
+                bg_color=(255, 0, 0),  # Red background
+                text_color=(255, 255, 255),  # White text
+                text_size=48
+            )
+
+        """
+        if self.display is not None:
+            self.display.fill(bg_color)
+            self.display.draw_text(text, center=True, size=text_size, color=text_color)
+            self.display.flip()
+            if duration is not None:
+                self.wait(duration)
+
+    def run_trial(
+        self,
+        draw_func: object,
+        trial_data: dict | None = None,
+        duration: float | None = None,
+        record: bool = True,
+        on_ui_event: object | None = None,
+    ) -> dict:
+        """Run a trial with automatic recording and event handling (Option B helper).
+
+        This is a structured trial runner that handles the common pattern:
+        start recording → draw loop → handle events → stop recording.
+
+        Args:
+            draw_func: Function that draws the trial. Called as `draw_func(window, trial_data)`.
+                      Should draw but NOT flip - flipping happens automatically.
+            trial_data: Optional dict passed to draw_func
+            duration: Maximum trial duration in seconds, or None for unlimited
+            record: If True, start/stop recording automatically
+            on_ui_event: Optional callback for UI events. Called as `on_ui_event(event_dict, trial_data)`.
+                        UI events = keyboard/mouse, NOT eye-tracking events.
+                        Return True to end trial early.
+
+        Returns:
+            dict with keys:
+                - 'duration': Actual trial duration in seconds
+                - 'ui_events': List of UI event dicts that occurred
+                - 'ended_by': 'duration', 'callback', or 'escape'
+
+        Example:
+            def draw_stimulus(window, data):
+                # window is raw backend window (Option A access within callback)
+                window.fill((128, 128, 128))
+                # ... draw your stimulus ...
+
+            def handle_response(event, data):
+                if event['type'] == 'keydown' and event['key'] == 'space':
+                    data['response_time'] = time.time() - data['trial_start']
+                    return True  # End trial
+                return False
+
+            trial_data = {'trial_start': time.time(), 'stimulus': 'image.png'}
+            result = tracker.run_trial(
+                draw_func=draw_stimulus,
+                trial_data=trial_data,
+                duration=5.0,
+                on_ui_event=handle_response
+            )
+
+        """
+        if self.display is None:
+            raise RuntimeError("Display not created. Call connect() first")
+
+        start_time = time.time()
+        ui_events = []
+        ended_by = "duration"
+
+        if trial_data is None:
+            trial_data = {}
+
+        if record:
+            self.start_recording()
+
+        try:
+            while True:
+                # Draw
+                draw_func(self.window, trial_data)
+                self.flip()
+
+                # Handle UI events (keyboard/mouse)
+                events = self.display.get_events()
+                for event in events:
+                    ui_events.append(event)
+
+                    # Check for escape key
+                    if event.get("type") == "keydown" and event.get("key") in {"escape", "esc"}:
+                        ended_by = "escape"
+                        break
+
+                    # Call user callback
+                    if on_ui_event is not None:
+                        should_end = on_ui_event(event, trial_data)
+                        if should_end:
+                            ended_by = "callback"
+                            break
+
+                if ended_by != "duration":
+                    break
+
+                # Check duration
+                if duration is not None and (time.time() - start_time) >= duration:
+                    break
+
+                time.sleep(0.001)
+
+        finally:
+            if record:
+                self.stop_recording()
+
+        return {
+            "duration": time.time() - start_time,
+            "ui_events": ui_events,
+            "ended_by": ended_by,
+        }
 
     def send_command(self, command: str) -> None:
         """Send a command to the EyeLink tracker.
@@ -760,14 +1127,23 @@ class EyeLink:  # noqa: PLR0904
         self._ensure_connected()
         self.tracker.drawText(text, position)
 
-    def calibrate(self, calibration_display: object, record_samples: bool = False) -> None:
-        """Calibrate eye-tracker using provided calibration display.
+    def calibrate(self, record_samples: bool = False) -> None:
+        """Calibrate eye-tracker using internal display window.
+
+        Creates calibration display automatically based on settings.BACKEND
+        and uses the tracker's internal window (tracker.display.window).
 
         Args:
-            calibration_display: CalibrationDisplay instance (backend-specific)
             record_samples: Record samples during calibration and validation
 
+        Example:
+            tracker = EyeLink(settings)
+            tracker.calibrate()  # No window parameter needed
+
         """
+        # Create calibration display using internal window
+        calibration_display = create_calibration(self.settings, self)
+
         # Set the tracker on the calibration display to self (which has the pylink tracker)
         calibration_display.set_tracker(self)
 
@@ -877,21 +1253,26 @@ class EyeLink:  # noqa: PLR0904
         self._is_recording = True
         logger.info("Recording started")
 
-    def end_experiment(self, spath: str, exit_program: bool = False) -> None:
+    def end_experiment(self, spath: str | None = None) -> None:
         """Comprehensive cleanup: stop recording, save EDF, and disconnect.
 
         This is the single cleanup method that ensures all resources are properly
-        cleaned up and the EDF file is saved. Called automatically on exit or
-        can be called explicitly by the user.
+        cleaned up and the EDF file is saved. Called automatically on exit, on Ctrl+C,
+        or can be called explicitly by the user.
+
+        Works at any point during the experiment, including during calibration.
 
         WARNING: Don't retrieve a file using PsychoPy. Start exp program from cmd
         otherwise file transfer can be very slow.
 
         Args:
-            spath: File path of where to save EDF file (include trailing slash)
-            exit_program: If True, calls sys.exit(0) after cleanup (used for Ctrl+Q)
+            spath: File path of where to save EDF file (include trailing slash).
+                   If None, uses the path stored during initialization.
 
         """
+        # Use stored path if not provided
+        if spath is None:
+            spath = self._data_save_path
         # Prevent duplicate cleanup
         if self._cleaned_up:
             return
@@ -901,7 +1282,7 @@ class EyeLink:  # noqa: PLR0904
         if not self._connected or self.tracker is None:
             return
 
-        logger.info("Starting experiment cleanup and EDF file transfer...")
+        logger.info("Experiment cleanup and EDF file transfer...")
 
         # Stop recording if active
         with contextlib.suppress(Exception):
@@ -915,6 +1296,12 @@ class EyeLink:  # noqa: PLR0904
             if self.events is not None:
                 self.events.shutdown()
 
+        # Close display window
+        with contextlib.suppress(Exception):
+            if self.display is not None:
+                self.display.close()
+                logger.info("Display window closed")
+
         # Transfer EDF file (most important - always try to save data)
         with contextlib.suppress(Exception):
             self._transfer_data_file(spath)
@@ -926,12 +1313,8 @@ class EyeLink:  # noqa: PLR0904
 
         self.tracker = None
         self._connected = False
-        logger.info("Experiment cleanup complete")
 
-        # Exit if requested (used for Ctrl+Q)
-        if exit_program:
-            logger.info("Exiting program...")
-            sys.exit(0)
+        logger.info("Experiment cleanup complete")
 
     # Recording management methods (from recorder.py)
 

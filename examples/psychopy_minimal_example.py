@@ -1,74 +1,61 @@
 """Minimal example using PsychoPy backend.
 
 This example demonstrates the basic usage of pyelink with PsychoPy.
+Shows both Option A (direct window access) and Option B (helper methods).
 """
 
 import time
 
-import pyglet
 from psychopy import visual
 
 import pyelink as el
 
-# Detect available monitors using pyglet
-display = pyglet.canvas.get_display()
-screens = display.get_screens()
-
-print(f"\nDetected {len(screens)} monitor(s)")
-for i, screen in enumerate(screens):
-    print(f"  Screen {i}: {screen.width}x{screen.height}")
-selected_screen = 0
-print("Using primary monitor")
-
-# Configure tracker - load from config file and customize
+# Configure tracker - tracker creates and owns the window
 settings = el.Settings.load_from_file("examples/default_config.json")
+settings.BACKEND = "psychopy"
+settings.FULLSCREEN = True
+settings.DISPLAY_INDEX = 0  # Primary monitor
 settings.FILENAME = "test"
-settings.SCREEN_RES = [screens[selected_screen].width, screens[selected_screen].height]
 settings.CALIBRATION_AREA_PROPORTION = [0.75, 0.75]
 settings.VALIDATION_AREA_PROPORTION = [0.75, 0.75]
+settings.HOST_IP = "dummy"  # Use dummy mode for testing without EyeLink
 
-print("\nConnecting to EyeLink...")
+print("Connecting to EyeLink and creating window...")
 tracker = el.EyeLink(settings, record_raw_data=False)
 
-# Now create PsychoPy window (after successful connection)
-win = visual.Window(
-    size=[screens[selected_screen].width, screens[selected_screen].height],
-    fullscr=True,
-    screen=selected_screen,
-    units="pix",
-    color=[0, 0, 0],
-)
-
-# Create calibration display
-print("Creating calibration display...")
-calibration = el.create_calibration(settings, tracker, win)
-
-# Calibrate
+# Calibrate (window created automatically by tracker)
 print("Starting calibration...")
-print("Press 'C' for calibration, 'V' for validation, Ctrl+Q or ESC to exit")
-# Record eye data during calibration/validation (set to False to disable)
-tracker.calibrate(calibration, record_samples=True)
-
+print("Press 'C' for calibration, 'V' for validation, ESC to exit")
+tracker.calibrate(record_samples=True)
 print("Calibration complete!")
-print("\nStarting data recording...")
+
+# Option B: Show instruction message using helper method
+tracker.show_message("Recording will begin in 3 seconds...", duration=3.0)
 
 # Start recording
+print("Starting data recording...")
 tracker.start_recording()
 
-# Countdown and record for 5 seconds
-countdown_text = visual.TextStim(win, text="", pos=(0, 0), height=100, color=(1, 1, 1), font="Arial")
+# Option A: Direct window access for custom drawing with PsychoPy stimuli
+print("Using Option A: Direct PsychoPy window access")
+text_stim = visual.TextStim(tracker.window, height=100, color=[-1, -1, -1])
 for i in range(5, 0, -1):
     print(f"Recording... {i}")
-    countdown_text.text = str(i)
-    countdown_text.draw()
-    win.flip()
+    # Direct access to PsychoPy visual.Window
+    tracker.window.color = [0, 0, 0]  # Gray background in PsychoPy
+    text_stim.text = str(i)
+    text_stim.draw()
+    tracker.window.flip()
     time.sleep(1)
 
+tracker.stop_recording()
 print("Recording complete!")
 
-# Clean up
+# Option B: Show completion message using helper method
+tracker.show_message("Experiment complete! Press SPACE to exit")
+tracker.wait_for_key("space")
+
+# Clean up (closes window automatically)
 print("Closing...")
-tracker.stop_recording()
-tracker.end_experiment("./")  # Saves EDF file to current directory
-win.close()
+tracker.end_experiment("./")
 print("Done!")
