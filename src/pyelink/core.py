@@ -57,6 +57,7 @@ class Settings:
 
     # Calibration settings
     N_CAL_TARGETS: int = defaults.N_CAL_TARGETS  # Number of calibration points (9 is standard; 13 for widescreens)
+    ENABLE_AUTOMATIC_CALIBRATION: bool = defaults.ENABLE_AUTOMATIC_CALIBRATION  # Auto-advance vs manual calibration
     PACING_INTERVAL: int = defaults.PACING_INTERVAL  # Time in ms to fixate each target during calibration
     CALIBRATION_CORNER_SCALING: float = (
         defaults.CALIBRATION_CORNER_SCALING
@@ -139,6 +140,7 @@ class Settings:
     ENABLE_CAMERA_POSITION_DETECT: str = defaults.ENABLE_CAMERA_POSITION_DETECT  # OFF (default) or ON
     ILLUMINATION_POWER: int = defaults.ILLUMINATION_POWER  # 'elcl_tt_power' setting: 1=100%, 2=75%, 3=50%
     HOST_IP: str = defaults.HOST_IP  # IP address of EyeLink Host PC
+    ENABLE_DUAL_CORNEAL_TRACKING: bool = defaults.ENABLE_DUAL_CORNEAL_TRACKING  # Enable tracking of secondary CRs
 
     # Physical setup configuration
     EL_CONFIGURATION: str = (
@@ -1188,7 +1190,11 @@ class EyeLink:  # noqa: PLR0904
             calst = f"HV{self.settings.N_CAL_TARGETS}"
             self.set_calibration_type(calst)
 
-            # Set calibration pacing
+            # Enable/disable automatic calibration sequencing
+            auto_cal_value = "YES" if self.settings.ENABLE_AUTOMATIC_CALIBRATION else "NO"
+            self.send_command(f"enable_automatic_calibration = {auto_cal_value}")
+
+            # Set calibration pacing (only relevant if automatic calibration is enabled)
             self.set_auto_calibration_pacing(self.settings.PACING_INTERVAL)
 
             # Execute custom calibration display
@@ -1616,7 +1622,12 @@ class EyeLink:  # noqa: PLR0904
         if enable:
             self.send_command("file_sample_raw_pcr = 0")  # Don't write raw data to file...
             self.send_command("link_sample_raw_pcr = 1")  # only over link
-            self.send_command("raw_pcr_dual_corneal = 1")  # Enable tracking of two CR (corneal reflections)
+
+            # Enable dual corneal tracking only if requested (can add noise during calibration)
+            if self.settings.ENABLE_DUAL_CORNEAL_TRACKING:
+                self.send_command("raw_pcr_dual_corneal = 1")  # Enable tracking of two CR (corneal reflections)
+            else:
+                self.send_command("raw_pcr_dual_corneal = 0")  # Track only primary CR
 
             self.send_command("inputword_is_window = ON")
             self.send_command(

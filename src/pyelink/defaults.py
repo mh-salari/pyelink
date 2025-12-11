@@ -24,7 +24,12 @@ SAMPLE_RATE = 1000  # Always use 1000 Hz; lower rates are filtered/downsampled v
 # CALIBRATION SETTINGS
 # =============================================================================
 N_CAL_TARGETS = 9  # Number of calibration points (9 is standard; 13 for widescreens)
-PACING_INTERVAL = 1000  # Time in ms to fixate each target during calibration
+ENABLE_AUTOMATIC_CALIBRATION = (
+    True  # YES=auto-advance through calibration points, NO=manual (SPACE to accept each point)
+)
+PACING_INTERVAL = (
+    1000  # Time in ms to fixate each target during calibration (only used if ENABLE_AUTOMATIC_CALIBRATION=True)
+)
 CALIBRATION_CORNER_SCALING = (
     1  # How far corner calibration points are from the screen edge (1=default; <1 closer to center, >1 closer to edge)
 )
@@ -78,8 +83,9 @@ REMOTE_LENS = 25  # Remote mode lens focal length in mm (optional, set to None i
 # =============================================================================
 PUPIL_TRACKING_MODE = "CENTROID"  # "CENTROID" or "ELLIPSE"
 PUPIL_SIZE_MODE = "AREA"  # 'AREA' or 'DIAMETER'
-HEURISTIC_FILTER = [1, 2]  # [link, file] (0=off, 1=normal, 2=extra). Default for EyeLink II/1000 is [1, 2]
+HEURISTIC_FILTER = [0, 0]  # [link, file] (0=off, 1=normal, 2=extra). Default for EyeLink II/1000 is [1, 2]
 SET_HEURISTIC_FILTER = True  # Activate filter or not (must be set every time recording starts)
+ENABLE_DUAL_CORNEAL_TRACKING = False  # Enable tracking of secondary corneal reflections
 
 
 # =============================================================================
@@ -111,7 +117,7 @@ ENABLE_SEARCH_LIMITS = "ON"  # ON (default) or OFF
 TRACK_SEARCH_LIMITS = "OFF"  # OFF (default) or ON - limits tracking search area
 AUTOTHRESHOLD_CLICK = "YES"  # YES (default) or NO - auto-adjust threshold on click
 AUTOTHRESHOLD_REPEAT = "YES"  # YES (default) or NO - repeat auto-threshold
-ENABLE_CAMERA_POSITION_DETECT = "OFF"  # OFF (default) or ON - camera position detection
+ENABLE_CAMERA_POSITION_DETECT = "ON"  # OFF (default) or ON - camera position detection
 ILLUMINATION_POWER = 2  # 'elcl_tt_power' setting: 1=100%, 2=75%, 3=50%
 HOST_IP = "100.1.1.1"  # IP address of EyeLink Host PC
 EL_CONFIGURATION = "BTABLER"  # Options: MTABLER, BTABLER, RTABLER, RBTABLER, AMTABLER, ARTABLER, BTOWER
