@@ -30,10 +30,11 @@ pip install pyelink[pyglet]
 
 ### Platform-Specific Notes
 
-**Apple Silicon (M1/M2/M3/M4):**
-- PsychoPy requires psychtoolbox, which is **not supported on Apple Silicon native Python**
-- Audio playback issues with PsychoPy and Pyglet backends on Apple Silicon
-- **Recommendation: Use Pygame backend on Apple Silicon**
+**macOS:**
+- PyAudio requires PortAudio. Install it first:
+```bash
+brew install portaudio
+```
 
 **Note:** You'll also need to install pylink separately from SR Research:
 ```bash
