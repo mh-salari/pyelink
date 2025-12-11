@@ -11,14 +11,14 @@ import pyelink as el
 # Configure tracker - tracker creates and owns the window
 settings = el.Settings(
     BACKEND="pygame",
-    FULLSCREEN=False,
+    FULLSCREEN=True,
     DISPLAY_INDEX=0,  # Primary monitor
     FILENAME="test",
-    HOST_IP="dummy",  # Use dummy mode for testing without EyeLink
+    # HOST_IP="dummy",  # Use dummy mode for testing without EyeLink
 )
 
 print("Connecting to EyeLink and creating window...")
-tracker = el.EyeLink(settings, record_raw_data=False)
+tracker = el.EyeLink(settings, record_raw_data=True)
 
 # Calibrate (window created automatically by tracker)
 print("Starting calibration...")

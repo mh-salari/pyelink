@@ -11,14 +11,14 @@ import pyelink as el
 # Configure tracker - tracker creates and owns the window
 settings = el.Settings(
     BACKEND="psychopy",
-    FULLSCREEN=False,
+    FULLSCREEN=True,
     DISPLAY_INDEX=0,  # Primary monitor
     FILENAME="test",
-    HOST_IP="dummy",  # Use dummy mode for testing without EyeLink
+    # HOST_IP="dummy",  # Use dummy mode for testing without EyeLink
 )
 
 print("Connecting to EyeLink and creating window...")
-tracker = el.EyeLink(settings, record_raw_data=False)
+tracker = el.EyeLink(settings, record_raw_data=True)
 
 # Calibrate (window created automatically by tracker)
 print("Starting calibration...")
@@ -35,7 +35,7 @@ tracker.start_recording()
 
 # Option A: Direct window access for custom drawing with PsychoPy stimuli
 print("Using Option A: Direct PsychoPy window access")
-text_stim = visual.TextStim(tracker.window, height=100, color=[-1, -1, -1])
+text_stim = visual.TextStim(tracker.window, height=100, color=[1, 1, 1])
 for i in range(5, 0, -1):
     print(f"Recording... {i}")
     # Direct access to PsychoPy visual.Window
