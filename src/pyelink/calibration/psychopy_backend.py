@@ -135,6 +135,7 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
             "escape": pylink.ESC_KEY,
             "return": pylink.ENTER_KEY,
             " ": ord(" "),
+            "space": ord(" "),  # PsychoPy might return "space" instead of " "
             "c": ord("c"),
             "v": ord("v"),
             "a": ord("a"),
