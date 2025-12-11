@@ -170,7 +170,18 @@ class PygletCalibrationDisplay(CalibrationDisplay):
 
         for event in events:
             if event.get("type") == "keydown":
+                modifiers = event.get("mod", 0)
                 key_name = event.get("key", "").lower()
+
+                # Handle Ctrl+C for graceful shutdown
+                if key_name == "c" and (modifiers & pyglet.window.key.MOD_CTRL):
+                    self.tracker.display.shutdown_handler(None, None)
+                    return ky
+
+                # Skip other keys with Ctrl modifier
+                if modifiers & pyglet.window.key.MOD_CTRL:
+                    continue
+
                 pylink_key = key_name_map.get(key_name)
                 if pylink_key is not None:
                     ky.append(pylink.KeyInput(pylink_key, 0))

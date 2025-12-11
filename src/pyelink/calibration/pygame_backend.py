@@ -106,7 +106,7 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         self.window.blit(self.target_image, img_rect)
         pygame.display.flip()
 
-    def get_input_key(self) -> list:  # noqa: PLR6301
+    def get_input_key(self) -> list:
         """Get keyboard input and convert to pylink key codes.
 
         Note:
@@ -137,6 +137,15 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         }
 
         for event in pygame.event.get(pygame.KEYDOWN):
+            # Handle Ctrl+C for graceful shutdown
+            if event.key == pygame.K_c and (event.mod & pygame.KMOD_CTRL):
+                self.tracker.display.shutdown_handler(None, None)
+                return ky
+
+            # Skip other keys with Ctrl modifier
+            if event.mod & pygame.KMOD_CTRL:
+                continue
+
             # Lookup key in the general key map
             pylink_key = key_map.get(event.key)
             if pylink_key is not None:

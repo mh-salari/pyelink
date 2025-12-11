@@ -116,7 +116,7 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
         self.target_image.draw()
         self.window.flip()
 
-    def get_input_key(self) -> list:  # noqa: PLR6301
+    def get_input_key(self) -> list:
         """Get keyboard input and convert to pylink key codes.
 
         Returns:
@@ -147,9 +147,19 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
         for key_info in v:
             # key_info is (key_name, modifiers_dict) or just key_name
             if isinstance(key_info, tuple):
-                char, _mods = key_info
+                char, mods = key_info
             else:
                 char = key_info
+                mods = {}
+
+            # Handle Ctrl+C for graceful shutdown
+            if char == "c" and mods.get("ctrl", False):
+                self.tracker.display.shutdown_handler(None, None)
+                return ky
+
+            # Skip other keys with Ctrl modifier
+            if mods.get("ctrl", False):
+                continue
 
             # Lookup key in the general key map
             pylink_key = key_map.get(char)
