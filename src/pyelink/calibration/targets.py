@@ -70,7 +70,7 @@ def _generate_fixation_target(settings: object, style: str) -> Image.Image:
         screen_height_mm=settings.SCREEN_HEIGHT,
         screen_width_px=settings.SCREEN_RES[0],
         screen_height_px=settings.SCREEN_RES[1],
-        viewing_distance_mm=settings.CAMERA_TO_SCREEN_DISTANCE,
+        viewing_distance_mm=(settings.VIEWING_DIST_TOP_BOTTOM[0] + settings.VIEWING_DIST_TOP_BOTTOM[1]) / 2,
         target_type=style,
         center_diameter_in_degrees=settings.FIXATION_CENTER_DIAMETER,
         outer_diameter_in_degrees=settings.FIXATION_OUTER_DIAMETER,
