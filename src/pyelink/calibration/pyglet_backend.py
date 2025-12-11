@@ -41,7 +41,7 @@ class PygletCalibrationDisplay(CalibrationDisplay):
 
         # Colors (RGBA)
         self.backcolor = (*settings.CAL_BACKGROUND_COLOR, 255)
-        self.forecolor = (0, 0, 0, 255)  # Black foreground
+        self.forecolor = (*settings.CALIBRATION_TEXT_COLOR, 255)
 
         # Generate target image (convert to pyglet via in-memory bytes)
         pil_image = generate_target(settings)
@@ -74,31 +74,19 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         """Initialize calibration display with instructions."""
         self._clear_window()
 
-        # Draw title centered on screen
-        title = pyglet.text.Label(
-            "EyeLink Camera Setup & Calibration",
-            font_name="Arial",
-            font_size=24,
-            x=self.width // 2,
-            y=self.height // 2 + 20,
-            anchor_x="center",
-            anchor_y="center",
-            color=self.forecolor,
-        )
-        title.draw()
-
-        # Draw instruction text
-        instructions = pyglet.text.Label(
-            "C = Calibrate  |  V = Validate  |  Enter = Accept  |  ESC = Exit",
-            font_name="Arial",
-            font_size=16,
-            x=self.width // 2,
-            y=self.height // 2 - 20,
-            anchor_x="center",
-            anchor_y="center",
-            color=self.forecolor,
-        )
-        instructions.draw()
+        # Draw instruction text centered on screen (if not empty)
+        if self.settings.CALIBRATION_INSTRUCTION_TEXT:
+            instructions = pyglet.text.Label(
+                self.settings.CALIBRATION_INSTRUCTION_TEXT,
+                font_name="Arial",
+                font_size=16,
+                x=self.width // 2,
+                y=self.height // 2,
+                anchor_x="center",
+                anchor_y="center",
+                color=self.forecolor,
+            )
+            instructions.draw()
 
         self.window.flip()
         logger.info("Starting Pyglet calibration display.")

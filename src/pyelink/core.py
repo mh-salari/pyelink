@@ -75,6 +75,8 @@ class Settings:
     TARGET_TYPE: str = defaults.TARGET_TYPE  # "ABC", "AB", "A", "B", "C", "CIRCLE", or "IMAGE" (see docs)
     TARGET_IMAGE_PATH: str | None = defaults.TARGET_IMAGE_PATH  # Path to image file (for TARGET_TYPE="IMAGE")
     CAL_BACKGROUND_COLOR: tuple[int, int, int] = defaults.CAL_BACKGROUND_COLOR  # RGB background color for calibration
+    CALIBRATION_INSTRUCTION_TEXT: str = defaults.CALIBRATION_INSTRUCTION_TEXT  # Instruction text on calibration screen
+    CALIBRATION_TEXT_COLOR: tuple[int, int, int] = defaults.CALIBRATION_TEXT_COLOR  # RGB text color for instructions
 
     # Fixation target settings (for A/B/C/AB/ABC types)
     FIXATION_CENTER_DIAMETER: float = defaults.FIXATION_CENTER_DIAMETER  # "A" component (deg visual angle)
@@ -270,6 +272,7 @@ class Settings:
         _validate_rgb_color(self.CIRCLE_OUTER_COLOR, "CIRCLE_OUTER_COLOR")
         _validate_rgb_color(self.CIRCLE_INNER_COLOR, "CIRCLE_INNER_COLOR")
         _validate_rgb_color(self.CAL_BACKGROUND_COLOR, "CAL_BACKGROUND_COLOR")
+        _validate_rgb_color(self.CALIBRATION_TEXT_COLOR, "CALIBRATION_TEXT_COLOR")
 
         # Validate fixation target dimensions (must be positive)
         if self.FIXATION_CENTER_DIAMETER <= 0:
@@ -352,11 +355,12 @@ class Settings:
             "FIXATION_OUTER_COLOR",
             "FIXATION_CROSS_COLOR",
         ]
-        # RGB fields (circle targets, calibration background) - keep as RGB
+        # RGB fields (circle targets, calibration background, calibration text) - keep as RGB
         rgb_fields = [
             "CIRCLE_OUTER_COLOR",
             "CIRCLE_INNER_COLOR",
             "CAL_BACKGROUND_COLOR",
+            "CALIBRATION_TEXT_COLOR",
         ]
 
         processed_dict = config_dict.copy()

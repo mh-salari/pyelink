@@ -42,6 +42,10 @@ VALIDATION_AREA_PROPORTION = [0.9, 0.9]  # [width, height] as proportion of scre
 TARGET_TYPE = "ABC"  # "ABC", "AB", "A", "B", "C", "CIRCLE", or "IMAGE" (see docs)
 TARGET_IMAGE_PATH = None  # Path to image file (for TARGET_TYPE="IMAGE")
 CAL_BACKGROUND_COLOR = (128, 128, 128)  # RGB gray background for calibration
+CALIBRATION_INSTRUCTION_TEXT = (
+    "Press ENTER to calibrate, V to validate, ESC to exit"  # Instruction text on calibration screen
+)
+CALIBRATION_TEXT_COLOR = (255, 255, 255)  # RGB white text color for instructions
 
 # Fixation target settings (for A/B/C/AB/ABC types)
 FIXATION_CENTER_DIAMETER = 0.1  # "A" component (deg visual angle)

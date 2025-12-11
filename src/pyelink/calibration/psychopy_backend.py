@@ -42,7 +42,8 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
         self.original_color = self.window.color
         rgb = settings.CAL_BACKGROUND_COLOR
         self.backcolor = [(c / 255.0) * 2 - 1 for c in rgb]
-        self.txtcol = [-1, -1, -1]  # Black text
+        text_rgb = settings.CALIBRATION_TEXT_COLOR
+        self.txtcol = [(c / 255.0) * 2 - 1 for c in text_rgb]
 
         # Set window to calibration background color
         self.window.color = self.backcolor
@@ -66,19 +67,19 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
 
     def setup_cal_display(self) -> None:
         """Initialize calibration display with instructions."""
-        # EyeLink standard instructions centered on screen
-        title = "EyeLink Camera Setup & Calibration"
-        title_stim = visual.TextStim(
-            self.window, title, pos=(0, 20), color=tuple(self.txtcol), units="pix", height=28, font="Arial"
-        )
+        # Draw instruction text centered on screen (if not empty)
+        if self.settings.CALIBRATION_INSTRUCTION_TEXT:
+            instr_stim = visual.TextStim(
+                self.window,
+                self.settings.CALIBRATION_INSTRUCTION_TEXT,
+                pos=(0, 0),
+                color=tuple(self.txtcol),
+                units="pix",
+                height=18,
+                font="Arial",
+            )
+            instr_stim.draw()
 
-        instructions = "C = Calibrate  |  V = Validate  |  Enter = Accept  |  ESC = Exit"
-        instr_stim = visual.TextStim(
-            self.window, instructions, pos=(0, -20), color=tuple(self.txtcol), units="pix", height=18, font="Arial"
-        )
-
-        title_stim.draw()
-        instr_stim.draw()
         self.window.flip()
 
     def exit_cal_display(self) -> None:

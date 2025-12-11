@@ -35,7 +35,7 @@ class PygameCalibrationDisplay(CalibrationDisplay):
 
         # Colors
         self.backcolor = settings.CAL_BACKGROUND_COLOR
-        self.forecolor = (0, 0, 0)  # Black foreground
+        self.forecolor = settings.CALIBRATION_TEXT_COLOR
         logger.info("PygameCalibrationDisplay initialized.")
 
         # Generate target image
@@ -61,16 +61,11 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         """Initialize calibration display with instructions."""
         self.window.fill(self.backcolor)
 
-        # Draw instruction text centered on screen
-        title = "EyeLink Camera Setup & Calibration"
-        title_surface = self.font.render(title, True, self.forecolor)
-        title_rect = title_surface.get_rect(center=(self.width // 2, self.height // 2 - 20))
-        self.window.blit(title_surface, title_rect)
-
-        instructions = "C = Calibrate  |  V = Validate  |  Enter = Accept  |  ESC = Exit"
-        instr_surface = self.small_font.render(instructions, True, self.forecolor)
-        instr_rect = instr_surface.get_rect(center=(self.width // 2, self.height // 2 + 20))
-        self.window.blit(instr_surface, instr_rect)
+        # Draw instruction text centered on screen (if not empty)
+        if self.settings.CALIBRATION_INSTRUCTION_TEXT:
+            instr_surface = self.small_font.render(self.settings.CALIBRATION_INSTRUCTION_TEXT, True, self.forecolor)
+            instr_rect = instr_surface.get_rect(center=(self.width // 2, self.height // 2))
+            self.window.blit(instr_surface, instr_rect)
 
         pygame.display.flip()
 
