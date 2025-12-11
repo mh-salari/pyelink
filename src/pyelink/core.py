@@ -1243,10 +1243,12 @@ class EyeLink:  # noqa: PLR0904
             recording stop according to the manual. It's on per default.
 
         """
+        if self.record_raw_data:
+            self._enable_raw_data(do_enable=True)
+
         self._start_recording(sendlink=sendlink, record_raw_data=self.record_raw_data)
 
         if self.record_raw_data:
-            self._enable_raw_data(do_enable=True)
             self._enable_realtime_mode()
             self.data.start_raw_thread()
 
@@ -1279,7 +1281,7 @@ class EyeLink:  # noqa: PLR0904
         time.sleep(0.05)
 
         if record_raw_data:
-            sendlink = True
+            sendlink = True  # <--- This is KEY!
 
         if sendlink:
             self.tracker.startRecording(1, 1, 1, 1)
