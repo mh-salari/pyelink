@@ -48,7 +48,7 @@ TARGET_TYPE = "ABC"  # "ABC", "AB", "A", "B", "C", "CIRCLE", or "IMAGE" (see doc
 TARGET_IMAGE_PATH = None  # Path to image file (for TARGET_TYPE="IMAGE")
 CAL_BACKGROUND_COLOR = (128, 128, 128)  # RGB gray background for calibration
 CALIBRATION_INSTRUCTION_TEXT = (
-    "Press ENTER to calibrate, V to validate, ESC to exit"  # Instruction text on calibration screen
+    "C to calibrate | V to validate | Enter to show camera image"  # Instruction text on calibration screen
 )
 CALIBRATION_TEXT_COLOR = (255, 255, 255)  # RGB white text color for instructions
 
@@ -56,8 +56,8 @@ CALIBRATION_TEXT_COLOR = (255, 255, 255)  # RGB white text color for instruction
 FIXATION_CENTER_DIAMETER = 0.1  # "A" component (deg visual angle)
 FIXATION_OUTER_DIAMETER = 0.6  # "B" component (deg visual angle)
 FIXATION_CROSS_WIDTH = 0.17  # "C" component (deg visual angle)
-FIXATION_CENTER_COLOR = (100, 100, 100, 255)  # RGBA black, fully opaque
-FIXATION_OUTER_COLOR = (100, 100, 100, 255)  # RGBA black, fully opaque
+FIXATION_CENTER_COLOR = (0, 0, 0, 255)  # RGBA black, fully opaque
+FIXATION_OUTER_COLOR = (0, 0, 0, 255)  # RGBA black, fully opaque
 FIXATION_CROSS_COLOR = (255, 255, 255, 0)  # Transparent white cross (alpha=0)
 
 # Circle target settings (for TARGET_TYPE="CIRCLE")

@@ -65,6 +65,10 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
         self.lineob = None
         self.loz = None
 
+        # Overlay drawing variables
+        self.overlay_lines = []
+        self.overlay_rects = []
+
     def setup_cal_display(self) -> None:
         """Initialize calibration display with instructions."""
         # Draw instruction text centered on screen (if not empty)
@@ -218,20 +222,23 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
 
         # Redraw the Camera Setup Mode graphics
         self.eye_image.draw()
+
+        # Draw all overlays
+        for overlay_line in self.overlay_lines:
+            overlay_line.draw()
+        for overlay_rect in self.overlay_rects:
+            overlay_rect.draw()
+
+        # Draw title text
         if self.image_title_text:
-            title_stim = visual.TextStim(
-                self.window,
-                text=self.image_title_text,
-                pos=(0, self.height // 2 - 15),
-                height=18,
-                color=self.txtcol,
-                units="pix",
-                font="Arial",
-            )
-            title_stim.draw()
+            self._draw_title()
 
         # Display
         self.window.flip()
+
+        # Clear overlays for next frame
+        self.overlay_lines = []
+        self.overlay_rects = []
 
     def set_image_palette(self, r: object, g: object, b: object) -> None:
         """Set color palette for camera image.
@@ -283,6 +290,112 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
         button_state = 1 if any(buttons) else 0
 
         return ((x, y), button_state)
+
+    def _eyelink_to_psychopy(self, x: float, y: float) -> tuple[float, float]:
+        """Convert EyeLink camera image coordinates to PsychoPy screen coordinates.
+
+        Args:
+            x: X coordinate in camera image space (top-left origin, 0 to size[0])
+            y: Y coordinate in camera image space (top-left origin, 0 to size[1])
+
+        Returns:
+            tuple: (x, y) in PsychoPy space (center origin, positive Y up)
+
+        """
+        if self.size is None or self.imgstim_size is None:
+            return (0.0, 0.0)
+
+        # Scale from camera image space to display size
+        scale_x = self.imgstim_size[0] / self.size[0]
+        scale_y = self.imgstim_size[1] / self.size[1]
+
+        x_scaled = x * scale_x
+        y_scaled = y * scale_y
+
+        # Convert from top-left origin to center origin
+        # Camera image is centered at (0, 0) in PsychoPy
+        x_psycho = x_scaled - (self.imgstim_size[0] / 2)
+        y_psycho = -y_scaled + (self.imgstim_size[1] / 2)  # Flip Y axis
+
+        return x_psycho, y_psycho
+
+    def draw_line(self, x1: float, y1: float, x2: float, y2: float, colorindex: int) -> None:
+        """Draw line on camera image.
+
+        Args:
+            x1: X coordinate of start point
+            y1: Y coordinate of start point
+            x2: X coordinate of end point
+            y2: Y coordinate of end point
+            colorindex: Pylink color constant
+
+        """
+        x1_psycho, y1_psycho = self._eyelink_to_psychopy(x1, y1)
+        x2_psycho, y2_psycho = self._eyelink_to_psychopy(x2, y2)
+        color = self.getColorFromIndex(colorindex)
+
+        line = visual.Line(
+            self.window,
+            start=(x1_psycho, y1_psycho),
+            end=(x2_psycho, y2_psycho),
+            lineColor=color,
+            units="pix",
+        )
+        self.overlay_lines.append(line)
+
+    def draw_lozenge(self, x: float, y: float, width: float, height: float, colorindex: int) -> None:
+        """Draw rectangle on camera image.
+
+        Args:
+            x: X coordinate of top-left corner
+            y: Y coordinate of top-left corner
+            width: Width of rectangle
+            height: Height of rectangle
+            colorindex: Pylink color constant
+
+        """
+        if self.size is None or self.imgstim_size is None:
+            return
+
+        # Scale width and height from camera image space to display size
+        scale_x = self.imgstim_size[0] / self.size[0]
+        scale_y = self.imgstim_size[1] / self.size[1]
+
+        width_scaled = width * scale_x
+        height_scaled = height * scale_y
+
+        # Convert top-left corner to center position for PsychoPy
+        center_x = x + width / 2
+        center_y = y + height / 2
+        center_x_psycho, center_y_psycho = self._eyelink_to_psychopy(center_x, center_y)
+        color = self.getColorFromIndex(colorindex)
+
+        rect = visual.Rect(
+            self.window,
+            width=width_scaled,
+            height=height_scaled,
+            pos=(center_x_psycho, center_y_psycho),
+            lineColor=color,
+            fillColor=None,
+            units="pix",
+        )
+        self.overlay_rects.append(rect)
+
+    def _draw_title(self) -> None:
+        """Draw title text on camera image."""
+        if not self.image_title_text:
+            return
+
+        title_stim = visual.TextStim(
+            self.window,
+            text=self.image_title_text,
+            pos=(0, self.height // 2 - 20),
+            height=18,
+            color=self.txtcol,
+            units="pix",
+            font="Arial",
+        )
+        title_stim.draw()
 
     def dummynote(self) -> None:
         """Display message for dummy mode (no hardware connection)."""

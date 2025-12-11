@@ -245,8 +245,12 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
     def exit_image_display(self) -> None:
         """Clean up camera image display."""
 
+    @abstractmethod
     def draw_line(self, x1: float, y1: float, x2: float, y2: float, colorindex: int) -> None:
-        """Draw line on camera view (disabled for performance).
+        """Draw line on camera view.
+
+        Called by EyeLink to draw crosshairs on pupil and corneal reflection.
+        Backends should draw using their native drawing API for best performance.
 
         Args:
             x1: X coordinate of start point
@@ -256,10 +260,13 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
             colorindex: Pylink color constant
 
         """
-        # Disabled: overlay drawing causes severe FPS drops
 
+    @abstractmethod
     def draw_lozenge(self, x: float, y: float, width: float, height: float, colorindex: int) -> None:
-        """Draw rectangle on camera view (disabled for performance).
+        """Draw rectangle on camera view.
+
+        Called by EyeLink to draw pupil box and search limits.
+        Backends should draw using their native drawing API for best performance.
 
         Args:
             x: X coordinate of top-left corner
@@ -269,7 +276,6 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
             colorindex: Pylink color constant
 
         """
-        # Disabled: overlay drawing causes severe FPS drops
 
     @abstractmethod
     def get_input_key(self) -> list:

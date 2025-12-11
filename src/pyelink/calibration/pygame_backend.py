@@ -51,11 +51,17 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         self.imgstim_size = None
         self.size = None
         self.__img__ = None  # Current PIL image being processed
+        self.cam_img = None  # Pygame surface for camera image with overlays
+
+        # Store overlay drawing commands to replay after image is created
+        self.overlay_lines = []
+        self.overlay_rects = []
 
         # Font for text display
         pygame.font.init()
         self.font = pygame.font.SysFont("Arial", 24)
         self.small_font = pygame.font.SysFont("Arial", 18)
+        self.tiny_font = pygame.font.SysFont("Courier New", 11)
 
     def setup_cal_display(self) -> None:
         """Initialize calibration display with instructions."""
@@ -196,23 +202,49 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         mode = image.mode
         size = image.size
         if mode == "RGB":
-            pygame_image = pygame.image.fromstring(image_data, size, mode)
+            self.cam_img = pygame.image.fromstring(image_data, size, mode)
         else:
             image = image.convert("RGB")
             image_data = image.tobytes()
-            pygame_image = pygame.image.fromstring(image_data, size, "RGB")
+            self.cam_img = pygame.image.fromstring(image_data, size, "RGB")
+
+        # Replay all overlay drawings on the new image
+        scale_x = self.cam_img.get_width() / self.size[0]
+        scale_y = self.cam_img.get_height() / self.size[1]
+
+        # Draw all lines
+        for x1, y1, x2, y2, colorindex in self.overlay_lines:
+            x1_scaled = int(x1 * scale_x)
+            y1_scaled = int(y1 * scale_y)
+            x2_scaled = int(x2 * scale_x)
+            y2_scaled = int(y2 * scale_y)
+            color = self.getColorFromIndex(colorindex)
+            pygame.draw.line(self.cam_img, color, (x1_scaled, y1_scaled), (x2_scaled, y2_scaled), 2)
+
+        # Draw all rectangles
+        for rect_x, rect_y, rect_width, rect_height, rect_colorindex in self.overlay_rects:
+            x_scaled = int(rect_x * scale_x)
+            y_scaled = int(rect_y * scale_y)
+            width_scaled = int(rect_width * scale_x)
+            height_scaled = int(rect_height * scale_y)
+            color = self.getColorFromIndex(rect_colorindex)
+            pygame.draw.rect(self.cam_img, color, (x_scaled, y_scaled, width_scaled, height_scaled), 3)
+
+        # Clear overlay lists for next frame
+        self.overlay_lines = []
+        self.overlay_rects = []
+
+        # Store image position for coordinate offset in overlays
+        self.img_x = (self.width - imgstim_size[0]) // 2
+        self.img_y = (self.height - imgstim_size[1]) // 2
 
         # Clear window and draw image centered
         self.window.fill(self.backcolor)
-        img_x = (self.width - imgstim_size[0]) // 2
-        img_y = (self.height - imgstim_size[1]) // 2
-        self.window.blit(pygame_image, (img_x, img_y))
+        self.window.blit(self.cam_img, (self.img_x, self.img_y))
 
         # Draw title/info text if present
         if self.image_title_text:
-            text_surface = self.small_font.render(self.image_title_text, True, self.forecolor)
-            text_rect = text_surface.get_rect(center=(self.width // 2, 20))
-            self.window.blit(text_surface, text_rect)
+            self._draw_title()
 
         # Update display
         pygame.display.flip()
@@ -232,6 +264,49 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         pos = pygame.mouse.get_pos()
         buttons = pygame.mouse.get_pressed()
         return (pos, 1 if buttons[0] else 0)
+
+    def draw_line(self, x1: float, y1: float, x2: float, y2: float, colorindex: int) -> None:
+        """Draw line on camera image.
+
+        Args:
+            x1: X coordinate of start point
+            y1: Y coordinate of start point
+            x2: X coordinate of end point
+            y2: Y coordinate of end point
+            colorindex: Pylink color constant
+
+        """
+        if self.size is None or self.imgstim_size is None:
+            return
+
+        # Store the drawing command to replay after image is created
+        self.overlay_lines.append((x1, y1, x2, y2, colorindex))
+
+    def draw_lozenge(self, x: float, y: float, width: float, height: float, colorindex: int) -> None:
+        """Draw rectangle on camera image.
+
+        Args:
+            x: X coordinate of top-left corner
+            y: Y coordinate of top-left corner
+            width: Width of rectangle
+            height: Height of rectangle
+            colorindex: Pylink color constant
+
+        """
+        if self.size is None or self.imgstim_size is None:
+            return
+
+        # Store the drawing command to replay after image is created
+        self.overlay_rects.append((x, y, width, height, colorindex))
+
+    def _draw_title(self) -> None:
+        """Draw title text at top center of screen."""
+        if not self.image_title_text:
+            return
+
+        text_surface = self.small_font.render(self.image_title_text, False, self.forecolor)
+        text_rect = text_surface.get_rect(center=(self.width // 2, 20))
+        self.window.blit(text_surface, text_rect)
 
     def dummynote(self) -> None:
         """Display message for dummy mode (no hardware connection)."""

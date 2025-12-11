@@ -61,6 +61,12 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         self.size = None
         self.image_sprite = None
         self.__img__ = None  # Current PIL image being processed
+        self.img_x = 0  # Image position on screen (set in draw_image_line)
+        self.img_y = 0
+
+        # Overlay drawing variables
+        self.overlay_batch = pyglet.graphics.Batch()
+        self.overlay_shapes = []
 
         # Store tracker reference to access display events
         self.tracker = tracker
@@ -221,35 +227,32 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         if image is None:
             return  # Not all lines received yet
 
+        # Store image position for overlays
+        self.img_x = (self.width - imgstim_size[0]) // 2
+        self.img_y = (self.height - imgstim_size[1]) // 2
+
         # Convert PIL image to pyglet image
         # Flip vertically because pyglet uses bottom-left origin
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
         raw_data = image.tobytes()
         pyglet_image = pyglet.image.ImageData(image.width, image.height, "RGB", raw_data, pitch=image.width * 3)
 
-        # Clear and draw
+        # Clear window and draw image
         self._clear_window()
+        pyglet_image.blit(self.img_x, self.img_y)
 
-        # Center the image
-        img_x = (self.width - imgstim_size[0]) // 2
-        img_y = (self.height - imgstim_size[1]) // 2
-        pyglet_image.blit(img_x, img_y)
+        # Draw all overlay shapes
+        self.overlay_batch.draw()
 
         # Draw title text
         if self.image_title_text:
-            label = pyglet.text.Label(
-                self.image_title_text,
-                font_name="Arial",
-                font_size=14,
-                x=self.width // 2,
-                y=self.height - 20,
-                anchor_x="center",
-                anchor_y="center",
-                color=self.forecolor,
-            )
-            label.draw()
+            self._draw_title()
 
         self.window.flip()
+
+        # Clear overlays for next frame
+        self.overlay_shapes = []
+        self.overlay_batch = pyglet.graphics.Batch()
 
     def exit_image_display(self) -> None:
         """Clean up camera image display."""
@@ -267,6 +270,134 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         y = self.height - y
         buttons = self.window._mouse_buttons if hasattr(self.window, "_mouse_buttons") else 0  # noqa: SLF001
         return ((int(x), int(y)), 1 if buttons else 0)
+
+    def draw_line(self, x1: float, y1: float, x2: float, y2: float, colorindex: int) -> None:
+        """Draw line on camera image.
+
+        Args:
+            x1: X coordinate of start point
+            y1: Y coordinate of start point
+            x2: X coordinate of end point
+            y2: Y coordinate of end point
+            colorindex: Pylink color constant
+
+        """
+        if self.size is None or self.imgstim_size is None:
+            return
+
+        color = self.getColorFromIndex(colorindex)
+        color_rgba = (*color, 255)
+
+        # Scale from camera image space to display size
+        scale_x = self.imgstim_size[0] / self.size[0]
+        scale_y = self.imgstim_size[1] / self.size[1]
+
+        x1_scaled = x1 * scale_x
+        y1_scaled = y1 * scale_y
+        x2_scaled = x2 * scale_x
+        y2_scaled = y2 * scale_y
+
+        # Convert to pyglet coordinates (bottom-left origin) and add image offset
+        y1_pyglet = self.img_y + (self.imgstim_size[1] - y1_scaled)
+        y2_pyglet = self.img_y + (self.imgstim_size[1] - y2_scaled)
+        x1_offset = self.img_x + x1_scaled
+        x2_offset = self.img_x + x2_scaled
+
+        line = pyglet.shapes.Line(
+            x1_offset, y1_pyglet, x2_offset, y2_pyglet, thickness=2, color=color_rgba, batch=self.overlay_batch
+        )
+        self.overlay_shapes.append(line)
+
+    def draw_lozenge(self, x: float, y: float, width: float, height: float, colorindex: int) -> None:
+        """Draw rectangle on camera image.
+
+        Args:
+            x: X coordinate of top-left corner
+            y: Y coordinate of top-left corner
+            width: Width of rectangle
+            height: Height of rectangle
+            colorindex: Pylink color constant
+
+        """
+        if self.size is None or self.imgstim_size is None:
+            return
+
+        color = self.getColorFromIndex(colorindex)
+        color_rgba = (*color, 255)
+
+        # Scale from camera image space to display size
+        scale_x = self.imgstim_size[0] / self.size[0]
+        scale_y = self.imgstim_size[1] / self.size[1]
+
+        x_scaled = x * scale_x
+        y_scaled = y * scale_y
+        width_scaled = width * scale_x
+        height_scaled = height * scale_y
+
+        # Convert to pyglet coordinates (bottom-left origin) and add image offset
+        y_pyglet = self.img_y + (self.imgstim_size[1] - y_scaled - height_scaled)
+        x_offset = self.img_x + x_scaled
+
+        # Draw rectangle as 4 lines (pyglet shapes.Rectangle is filled)
+        # Top line
+        line1 = pyglet.shapes.Line(
+            x_offset,
+            y_pyglet + height_scaled,
+            x_offset + width_scaled,
+            y_pyglet + height_scaled,
+            thickness=3,
+            color=color_rgba,
+            batch=self.overlay_batch,
+        )
+        # Bottom line
+        line2 = pyglet.shapes.Line(
+            x_offset,
+            y_pyglet,
+            x_offset + width_scaled,
+            y_pyglet,
+            thickness=3,
+            color=color_rgba,
+            batch=self.overlay_batch,
+        )
+        # Left line
+        line3 = pyglet.shapes.Line(
+            x_offset,
+            y_pyglet,
+            x_offset,
+            y_pyglet + height_scaled,
+            thickness=3,
+            color=color_rgba,
+            batch=self.overlay_batch,
+        )
+        # Right line
+        line4 = pyglet.shapes.Line(
+            x_offset + width_scaled,
+            y_pyglet,
+            x_offset + width_scaled,
+            y_pyglet + height_scaled,
+            thickness=3,
+            color=color_rgba,
+            batch=self.overlay_batch,
+        )
+
+        self.overlay_shapes.extend([line1, line2, line3, line4])
+
+    def _draw_title(self) -> None:
+        """Draw title text at top center of screen."""
+        if not self.image_title_text:
+            return
+
+        label = pyglet.text.Label(
+            self.image_title_text,
+            font_name="Arial",
+            font_size=16,
+            x=self.width // 2,
+            y=self.height - 20,
+            anchor_x="center",
+            anchor_y="top",
+            color=self.forecolor,
+        )
+        label.draw()
 
     def dummynote(self) -> None:
         """Display message for dummy mode (no hardware connection)."""
