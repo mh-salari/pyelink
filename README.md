@@ -4,11 +4,13 @@ Multi-backend Python wrapper for SR Research EyeLink eye trackers.
 
 ## Installation
 
-Choose ONE backend when installing:
+**You must specify a backend when installing pyelink.** A simple `pip install pyelink` will NOT work because pyelink requires one of three mutually exclusive display backends (pygame, psychopy, or pyglet).
+
+Choose ONE backend:
 
 ```bash
-# For Pygame users (recommended - works on all platforms)
-pip install pyelink
+# For Pygame users
+pip install pyelink[pygame]
 
 # For PsychoPy users (Python < 3.12 only)
 pip install pyelink[psychopy]
@@ -16,6 +18,8 @@ pip install pyelink[psychopy]
 # For Pyglet users (pyglet 2.0+)
 pip install pyelink[pyglet]
 ```
+
+**Note:** This codebase has been tested on macOS ARM (Apple Silicon) only.
 
 ### ⚠️ Backend Compatibility Warning
 
