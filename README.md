@@ -1,6 +1,6 @@
-# PyELink
+# PyeLink
 
-Multi-backend Python wrapper for SR Research EyeLink eye trackers.
+Python wrapper for SR Research EyeLink eye trackers.
 
 ## Installation
 
@@ -17,6 +17,11 @@ pip install pyelink[psychopy]
 
 # For Pyglet users (pyglet 2.0+)
 pip install pyelink[pyglet]
+```
+
+You'll also need to install pylink separately from SR Research:
+```bash
+pip install --index-url=https://pypi.sr-support.com sr-research-pylink
 ```
 
 **Note:** This codebase has been tested on macOS ARM (Apple Silicon) only.
@@ -39,13 +44,6 @@ pip install pyelink[pyglet]
 ```bash
 brew install portaudio
 ```
-
-**Note:** You'll also need to install pylink separately from SR Research:
-```bash
-pip install --index-url=https://pypi.sr-support.com sr-research-pylink
-```
-
-
 
 ## Quick Start
 
