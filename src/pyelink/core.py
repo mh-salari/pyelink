@@ -133,6 +133,10 @@ class Settings:
 
     # Hardware settings (not in defaults - specific to setup)
     ENABLE_SEARCH_LIMITS: str = defaults.ENABLE_SEARCH_LIMITS  # ON (default) or OFF
+    TRACK_SEARCH_LIMITS: str = defaults.TRACK_SEARCH_LIMITS  # OFF (default) or ON
+    AUTOTHRESHOLD_CLICK: str = defaults.AUTOTHRESHOLD_CLICK  # YES (default) or NO
+    AUTOTHRESHOLD_REPEAT: str = defaults.AUTOTHRESHOLD_REPEAT  # YES (default) or NO
+    ENABLE_CAMERA_POSITION_DETECT: str = defaults.ENABLE_CAMERA_POSITION_DETECT  # OFF (default) or ON
     ILLUMINATION_POWER: int = defaults.ILLUMINATION_POWER  # 'elcl_tt_power' setting: 1=100%, 2=75%, 3=50%
     HOST_IP: str = defaults.HOST_IP  # IP address of EyeLink Host PC
 

@@ -48,11 +48,11 @@ CALIBRATION_INSTRUCTION_TEXT = (
 CALIBRATION_TEXT_COLOR = (255, 255, 255)  # RGB white text color for instructions
 
 # Fixation target settings (for A/B/C/AB/ABC types)
-FIXATION_CENTER_DIAMETER = 0.1 * 1.5  # "A" component (deg visual angle)
-FIXATION_OUTER_DIAMETER = 0.6 * 1.5  # "B" component (deg visual angle)
-FIXATION_CROSS_WIDTH = 0.17 * 1.5  # "C" component (deg visual angle)
-FIXATION_CENTER_COLOR = (0, 0, 0, 255)  # RGBA black, fully opaque
-FIXATION_OUTER_COLOR = (0, 0, 0, 255)  # RGBA black, fully opaque
+FIXATION_CENTER_DIAMETER = 0.1  # "A" component (deg visual angle)
+FIXATION_OUTER_DIAMETER = 0.6  # "B" component (deg visual angle)
+FIXATION_CROSS_WIDTH = 0.17  # "C" component (deg visual angle)
+FIXATION_CENTER_COLOR = (100, 100, 100, 255)  # RGBA black, fully opaque
+FIXATION_OUTER_COLOR = (100, 100, 100, 255)  # RGBA black, fully opaque
 FIXATION_CROSS_COLOR = (255, 255, 255, 0)  # Transparent white cross (alpha=0)
 
 # Circle target settings (for TARGET_TYPE="CIRCLE")
@@ -68,8 +68,8 @@ CIRCLE_INNER_COLOR = (128, 128, 128)  # RGB gray
 SCREEN_RES = [1280, 1024]  # [width, height] in pixels
 SCREEN_WIDTH = 376.0  # Physical width in mm
 SCREEN_HEIGHT = 301.0  # Physical height in mm
-CAMERA_TO_SCREEN_DISTANCE = 490.0  # Distance from camera to center of screen in mm
-VIEWING_DIST_TOP_BOTTOM = [960, 1000]  # [top_mm, bottom_mm] (optional, set to None if not using remote mode)
+CAMERA_TO_SCREEN_DISTANCE = 475.0  # Distance from camera to center of screen in mm
+VIEWING_DIST_TOP_BOTTOM = [940, 1000]  # [top_mm, bottom_mm] (optional, set to None if not using remote mode)
 REMOTE_LENS = 25  # Remote mode lens focal length in mm (optional, set to None if not using remote mode)
 
 
@@ -78,7 +78,7 @@ REMOTE_LENS = 25  # Remote mode lens focal length in mm (optional, set to None i
 # =============================================================================
 PUPIL_TRACKING_MODE = "CENTROID"  # "CENTROID" or "ELLIPSE"
 PUPIL_SIZE_MODE = "AREA"  # 'AREA' or 'DIAMETER'
-HEURISTIC_FILTER = [0, 0]  # [link, file] (0=off, 1=normal, 2=extra). Default for EyeLink II/1000 is [1, 2]
+HEURISTIC_FILTER = [1, 2]  # [link, file] (0=off, 1=normal, 2=extra). Default for EyeLink II/1000 is [1, 2]
 SET_HEURISTIC_FILTER = True  # Activate filter or not (must be set every time recording starts)
 
 
@@ -108,6 +108,10 @@ DISPLAY_INDEX = 0  # Monitor index: 0=primary, 1=secondary, etc.
 # HARDWARE SETTINGS
 # =============================================================================
 ENABLE_SEARCH_LIMITS = "ON"  # ON (default) or OFF
+TRACK_SEARCH_LIMITS = "OFF"  # OFF (default) or ON - limits tracking search area
+AUTOTHRESHOLD_CLICK = "YES"  # YES (default) or NO - auto-adjust threshold on click
+AUTOTHRESHOLD_REPEAT = "YES"  # YES (default) or NO - repeat auto-threshold
+ENABLE_CAMERA_POSITION_DETECT = "OFF"  # OFF (default) or ON - camera position detection
 ILLUMINATION_POWER = 2  # 'elcl_tt_power' setting: 1=100%, 2=75%, 3=50%
 HOST_IP = "100.1.1.1"  # IP address of EyeLink Host PC
 EL_CONFIGURATION = "BTABLER"  # Options: MTABLER, BTABLER, RTABLER, RBTABLER, AMTABLER, ARTABLER, BTOWER
