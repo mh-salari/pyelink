@@ -35,10 +35,10 @@ CALIBRATION_CORNER_SCALING = (
 )
 VALIDATION_CORNER_SCALING = 1  # How far corner validation points are from the screen edge (same scaling as above)
 CALIBRATION_AREA_PROPORTION = [
-    0.9,
-    0.9,
+    0.88,
+    0.83,
 ]  # [width, height] as proportion of screen used for calibration targets (e.g., 0.9 = 90% of screen)
-VALIDATION_AREA_PROPORTION = [0.9, 0.9]  # [width, height] as proportion of screen used for validation targets
+VALIDATION_AREA_PROPORTION = [0.88, 0.83]  # [width, height] as proportion of screen used for validation targets
 
 
 # =============================================================================
@@ -53,9 +53,10 @@ CALIBRATION_INSTRUCTION_TEXT = (
 CALIBRATION_TEXT_COLOR = (255, 255, 255)  # RGB white text color for instructions
 
 # Fixation target settings (for A/B/C/AB/ABC types)
-FIXATION_CENTER_DIAMETER = 0.1  # "A" component (deg visual angle)
-FIXATION_OUTER_DIAMETER = 0.6  # "B" component (deg visual angle)
-FIXATION_CROSS_WIDTH = 0.17  # "C" component (deg visual angle)
+FIXATION_TARGET_SCALE = 0.75
+FIXATION_CENTER_DIAMETER = 0.1 * FIXATION_TARGET_SCALE  # "A" component (deg visual angle)
+FIXATION_OUTER_DIAMETER = 0.6 * FIXATION_TARGET_SCALE  # "B" component (deg visual angle)
+FIXATION_CROSS_WIDTH = 0.17 * FIXATION_TARGET_SCALE  # "C" component (deg visual angle)
 FIXATION_CENTER_COLOR = (0, 0, 0, 255)  # RGBA black, fully opaque
 FIXATION_OUTER_COLOR = (0, 0, 0, 255)  # RGBA black, fully opaque
 FIXATION_CROSS_COLOR = (255, 255, 255, 0)  # Transparent white cross (alpha=0)
@@ -73,9 +74,14 @@ CIRCLE_INNER_COLOR = (128, 128, 128)  # RGB gray
 SCREEN_RES = [1280, 1024]  # [width, height] in pixels
 SCREEN_WIDTH = 376.0  # Physical width in mm
 SCREEN_HEIGHT = 301.0  # Physical height in mm
-CAMERA_TO_SCREEN_DISTANCE = 475.0  # Distance from camera to center of screen in mm
-VIEWING_DIST_TOP_BOTTOM = [940, 1000]  # [top_mm, bottom_mm] (optional, set to None if not using remote mode)
-REMOTE_LENS = 25  # Remote mode lens focal length in mm (optional, set to None if not using remote mode)
+
+# Screen distance parameters (at least one must be provided):
+SCREEN_DISTANCE = None  # Distance from eye to center of screen in mm (float or None)
+SCREEN_DISTANCE_TOP_BOTTOM = [960, 1000]  # [top, bottom] (list of two positive numbers or None)
+# If both are provided, SCREEN_DISTANCE_TOP_BOTTOM is used for higher accuracy.
+
+CAMERA_TO_SCREEN_DISTANCE = 475.0  # Distance from camera to screen in mm (optional, for remote mode)
+CAMERA_LENS_FOCAL_LENGTH = 38  # Remote mode lens focal length in mm (optional, for remote mode)
 
 
 # =============================================================================
@@ -91,7 +97,7 @@ ENABLE_DUAL_CORNEAL_TRACKING = False  # Enable tracking of secondary corneal ref
 # =============================================================================
 # RECORDING SETTINGS and CONTENT of EDF FILE
 # =============================================================================
-FILE_EVENT_FILTER = "LEFT,RIGHT,MESSAGE,BUTTON,INPUT"  # Which events to record to file
+FILE_EVENT_FILTER = "LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,INPUT"  # Which events to record to file
 LINK_EVENT_FILTER = "LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,INPUT"  # Over link
 LINK_SAMPLE_DATA = "LEFT,RIGHT,GAZE,GAZERES,AREA,STATUS,HTARGET"  # Sample fields over link
 FILE_SAMPLE_DATA = "LEFT,RIGHT,GAZE,GAZERES,AREA,HREF,PUPIL,STATUS,INPUT,HMARKER,HTARGET"  # To file
@@ -114,7 +120,7 @@ DISPLAY_INDEX = 0  # Monitor index: 0=primary, 1=secondary, etc.
 # HARDWARE SETTINGS
 # =============================================================================
 ENABLE_SEARCH_LIMITS = "ON"  # ON (default) or OFF
-TRACK_SEARCH_LIMITS = "OFF"  # OFF (default) or ON - limits tracking search area
+TRACK_SEARCH_LIMITS = "YES"  # OFF (default) or ON - limits tracking search area
 AUTOTHRESHOLD_CLICK = "YES"  # YES (default) or NO - auto-adjust threshold on click
 AUTOTHRESHOLD_REPEAT = "YES"  # YES (default) or NO - repeat auto-threshold
 ENABLE_CAMERA_POSITION_DETECT = "ON"  # OFF (default) or ON - camera position detection

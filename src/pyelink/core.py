@@ -80,6 +80,7 @@ class Settings:
     CALIBRATION_TEXT_COLOR: tuple[int, int, int] = defaults.CALIBRATION_TEXT_COLOR  # RGB text color for instructions
 
     # Fixation target settings (for A/B/C/AB/ABC types)
+    FIXATION_TARGET_SCALE: float = defaults.FIXATION_TARGET_SCALE  # Scale for all fixation target components
     FIXATION_CENTER_DIAMETER: float = defaults.FIXATION_CENTER_DIAMETER  # "A" component (deg visual angle)
     FIXATION_OUTER_DIAMETER: float = defaults.FIXATION_OUTER_DIAMETER  # "B" component (deg visual angle)
     FIXATION_CROSS_WIDTH: float = defaults.FIXATION_CROSS_WIDTH  # "C" component (deg visual angle)
@@ -97,13 +98,16 @@ class Settings:
     SCREEN_RES: list[int] = field(default_factory=defaults.SCREEN_RES.copy)  # [width, height] in pixels
     SCREEN_WIDTH: float = defaults.SCREEN_WIDTH  # Physical width in mm
     SCREEN_HEIGHT: float = defaults.SCREEN_HEIGHT  # Physical height in mm
-    CAMERA_TO_SCREEN_DISTANCE: float = (
-        defaults.CAMERA_TO_SCREEN_DISTANCE
-    )  # Distance from camera to center of screen in mm
-    VIEWING_DIST_TOP_BOTTOM: list[int] | None = field(
-        default_factory=lambda: defaults.VIEWING_DIST_TOP_BOTTOM.copy() if defaults.VIEWING_DIST_TOP_BOTTOM else None
-    )  # [top_mm, bottom_mm] for parser output (optional)
-    REMOTE_LENS: int | None = defaults.REMOTE_LENS  # Remote mode lens focal length in mm (optional)
+    CAMERA_TO_SCREEN_DISTANCE: float = defaults.CAMERA_TO_SCREEN_DISTANCE  # Distance from camera to screen in mm
+    SCREEN_DISTANCE_MM: float | None = (
+        defaults.SCREEN_DISTANCE_MM
+    )  # Distance from eye to center of screen in mm (float or None)
+    SCREEN_DISTANCE_TOP_BOTTOM_MM: list[float] | None = (
+        defaults.SCREEN_DISTANCE_TOP_BOTTOM_MM.copy() if defaults.SCREEN_DISTANCE_TOP_BOTTOM_MM else None
+    )  # [top_mm, bottom_mm] (list of two positive numbers or None)
+    CAMERA_LENS_FOCAL_LENGTH: int | None = (
+        defaults.CAMERA_LENS_FOCAL_LENGTH
+    )  # Remote mode lens focal length in mm (optional)
 
     # Display settings
     BACKEND: str = defaults.BACKEND  # Visualization backend: "pygame", "psychopy", or "pyglet"
@@ -134,7 +138,7 @@ class Settings:
 
     # Hardware settings (not in defaults - specific to setup)
     ENABLE_SEARCH_LIMITS: str = defaults.ENABLE_SEARCH_LIMITS  # ON (default) or OFF
-    TRACK_SEARCH_LIMITS: str = defaults.TRACK_SEARCH_LIMITS  # OFF (default) or ON
+    TRACK_SEARCH_LIMITS: str = defaults.TRACK_SEARCH_LIMITS  # YES (default) or OFF
     AUTOTHRESHOLD_CLICK: str = defaults.AUTOTHRESHOLD_CLICK  # YES (default) or NO
     AUTOTHRESHOLD_REPEAT: str = defaults.AUTOTHRESHOLD_REPEAT  # YES (default) or NO
     ENABLE_CAMERA_POSITION_DETECT: str = defaults.ENABLE_CAMERA_POSITION_DETECT  # OFF (default) or ON
@@ -176,16 +180,27 @@ class Settings:
         if self.CAMERA_TO_SCREEN_DISTANCE <= 0:
             raise ValueError(f"CAMERA_TO_SCREEN_DISTANCE must be positive, got: {self.CAMERA_TO_SCREEN_DISTANCE}")
 
-        # Viewing distance top/bottom validation - if provided, must have exactly 2 elements
-        if self.VIEWING_DIST_TOP_BOTTOM is not None:
-            if not isinstance(self.VIEWING_DIST_TOP_BOTTOM, list) or len(self.VIEWING_DIST_TOP_BOTTOM) != 2:
-                raise ValueError(
-                    f"VIEWING_DIST_TOP_BOTTOM must be None or a list of 2 numbers, got: {self.VIEWING_DIST_TOP_BOTTOM}"
-                )
-            if not all(isinstance(x, (int, float)) and x > 0 for x in self.VIEWING_DIST_TOP_BOTTOM):
-                raise ValueError(
-                    f"VIEWING_DIST_TOP_BOTTOM values must be positive numbers, got: {self.VIEWING_DIST_TOP_BOTTOM}"
-                )
+        # Screen distance validation: at least one of SCREEN_DISTANCE_MM or SCREEN_DISTANCE_TOP_BOTTOM_MM must be provided and valid
+        has_center = (
+            self.SCREEN_DISTANCE_MM is not None
+            and isinstance(self.SCREEN_DISTANCE_MM, (int, float))
+            and self.SCREEN_DISTANCE_MM > 0
+        )
+        has_top_bottom = (
+            self.SCREEN_DISTANCE_TOP_BOTTOM_MM is not None
+            and isinstance(self.SCREEN_DISTANCE_TOP_BOTTOM_MM, list)
+            and len(self.SCREEN_DISTANCE_TOP_BOTTOM_MM) == 2
+            and all(isinstance(x, (int, float)) and x > 0 for x in self.SCREEN_DISTANCE_TOP_BOTTOM_MM)
+        )
+        if not (has_center or has_top_bottom):
+            raise ValueError(
+                "You must provide at least one valid screen distance: either SCREEN_DISTANCE_MM (center, >0) or SCREEN_DISTANCE_TOP_BOTTOM_MM ([top, bottom], both >0)."
+            )
+        # Prefer SCREEN_DISTANCE_TOP_BOTTOM_MM if both are valid, and ensure only the valid one is used
+        if has_top_bottom:
+            self.SCREEN_DISTANCE_MM = None
+        elif has_center:
+            self.SCREEN_DISTANCE_TOP_BOTTOM_MM = None
 
         # Calibration area proportion validation
         if not isinstance(self.CALIBRATION_AREA_PROPORTION, list) or len(self.CALIBRATION_AREA_PROPORTION) != 2:
@@ -280,7 +295,9 @@ class Settings:
         _validate_rgb_color(self.CAL_BACKGROUND_COLOR, "CAL_BACKGROUND_COLOR")
         _validate_rgb_color(self.CALIBRATION_TEXT_COLOR, "CALIBRATION_TEXT_COLOR")
 
-        # Validate fixation target dimensions (must be positive)
+        # Validate fixation target scale and dimensions (must be positive)
+        if self.FIXATION_TARGET_SCALE <= 0:
+            raise ValueError(f"FIXATION_TARGET_SCALE must be positive, got: {self.FIXATION_TARGET_SCALE}")
         if self.FIXATION_CENTER_DIAMETER <= 0:
             raise ValueError(f"FIXATION_CENTER_DIAMETER must be positive, got: {self.FIXATION_CENTER_DIAMETER}")
         if self.FIXATION_OUTER_DIAMETER <= 0:
@@ -299,9 +316,11 @@ class Settings:
                 f"CIRCLE_OUTER_RADIUS ({self.CIRCLE_OUTER_RADIUS})"
             )
 
-        # Remote lens validation (optional)
-        if self.REMOTE_LENS is not None and self.REMOTE_LENS <= 0:
-            raise ValueError(f"REMOTE_LENS must be positive or None, got: {self.REMOTE_LENS}")
+        # Camera lens focal length validation (optional)
+        if self.CAMERA_LENS_FOCAL_LENGTH is not None and self.CAMERA_LENS_FOCAL_LENGTH <= 0:
+            raise ValueError(
+                f"CAMERA_LENS_FOCAL_LENGTH must be positive or None, got: {self.CAMERA_LENS_FOCAL_LENGTH}"
+            )
 
         # Backend validation
         valid_backends = {"pygame", "psychopy", "pyglet"}
@@ -1519,13 +1538,28 @@ class EyeLink:  # noqa: PLR0904
         # Set geometry to be able to use parser output (left, top, right, bottom, in mm)
         self.send_command(self._build_screen_phys_coords_command())
 
-        if self.settings.VIEWING_DIST_TOP_BOTTOM:
-            scrtxt = f"screen_distance {self.settings.VIEWING_DIST_TOP_BOTTOM[0]} {self.settings.VIEWING_DIST_TOP_BOTTOM[1]}"
+        # screen_distance = <mm to center> | <mm to top> <mm to bottom>
+        # Used for visual angle and velocity calculations.
+        # Providing <mm to top> <mm to bottom> parameters will give better estimates than <mm to center>
+        #   <mm to center>: distance from display center to subject in millimetres.
+        #   <mm to top>: distance from display top to subject in millimetres.
+        #   <mm to bottom>: distance from display bottom to subject in millimetres.
+        if self.settings.SCREEN_DISTANCE_TOP_BOTTOM is not None:
+            scrtxt = f"screen_distance = {self.settings.SCREEN_DISTANCE_TOP_BOTTOM[0]} {self.settings.SCREEN_DISTANCE_TOP_BOTTOM[1]}"
             self.send_command(scrtxt)
-
+        else:
+            self.send_command(f"screen_distance = {self.settings.SCREEN_DISTANCE}")
         # Set remote mode lens if provided
-        if self.settings.REMOTE_LENS is not None:
-            self.send_command(f"camera_lens_focal_length = {self.settings.REMOTE_LENS}")
+        if self.settings.CAMERA_LENS_FOCAL_LENGTH is not None:
+            self.send_command(f"camera_lens_focal_length = {self.settings.CAMERA_LENS_FOCAL_LENGTH}")
+        if self.settings.CAMERA_TO_SCREEN_DISTANCE is not None:
+            # remote_camera_position <rh> <rv> <dx> <dy> <dz>
+            #   <rh>:  rotation of camera from screen (clockwise from top)
+            #          i.e. how much the right edge of the camera is closer than left edge of camera
+            #          10 assumes right edge is closer than left edge
+            #   <rv>: tilt of camera from screen (top toward screen)
+            #   <dx>: bottom-center of display in cam coords
+            self.send_command(f"remote_camera_position = -10 17 80 60 -{self.settings.CAMERA_TO_SCREEN_DISTANCE}")
 
         # Set content of edf file
         self.send_command("file_event_filter = " + self.settings.FILE_EVENT_FILTER)
@@ -1533,9 +1567,6 @@ class EyeLink:  # noqa: PLR0904
         self.send_command("link_sample_data = " + self.settings.LINK_SAMPLE_DATA)
         self.send_command("file_sample_data = " + self.settings.FILE_SAMPLE_DATA)
 
-        self.send_command(
-            f"screen_distance = {self.settings.CAMERA_TO_SCREEN_DISTANCE} {self.settings.CAMERA_TO_SCREEN_DISTANCE}"
-        )
         self.send_command(self._build_screen_phys_coords_command(use_equals=True))
         self.send_command(f"sample_rate = {self.settings.SAMPLE_RATE}")
         self.send_command(f"pupil_size_diameter = {self.settings.PUPIL_SIZE_MODE}")
