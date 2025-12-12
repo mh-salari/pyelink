@@ -99,11 +99,13 @@ class Settings:
     SCREEN_WIDTH: float = defaults.SCREEN_WIDTH  # Physical width in mm
     SCREEN_HEIGHT: float = defaults.SCREEN_HEIGHT  # Physical height in mm
     CAMERA_TO_SCREEN_DISTANCE: float = defaults.CAMERA_TO_SCREEN_DISTANCE  # Distance from camera to screen in mm
-    SCREEN_DISTANCE_MM: float | None = (
-        defaults.SCREEN_DISTANCE_MM
+    SCREEN_DISTANCE: float | None = (
+        defaults.SCREEN_DISTANCE
     )  # Distance from eye to center of screen in mm (float or None)
-    SCREEN_DISTANCE_TOP_BOTTOM_MM: list[float] | None = (
-        defaults.SCREEN_DISTANCE_TOP_BOTTOM_MM.copy() if defaults.SCREEN_DISTANCE_TOP_BOTTOM_MM else None
+    SCREEN_DISTANCE_TOP_BOTTOM: list[float] | None = field(
+        default_factory=lambda: defaults.SCREEN_DISTANCE_TOP_BOTTOM.copy()
+        if defaults.SCREEN_DISTANCE_TOP_BOTTOM
+        else None
     )  # [top_mm, bottom_mm] (list of two positive numbers or None)
     CAMERA_LENS_FOCAL_LENGTH: int | None = (
         defaults.CAMERA_LENS_FOCAL_LENGTH
@@ -180,27 +182,27 @@ class Settings:
         if self.CAMERA_TO_SCREEN_DISTANCE <= 0:
             raise ValueError(f"CAMERA_TO_SCREEN_DISTANCE must be positive, got: {self.CAMERA_TO_SCREEN_DISTANCE}")
 
-        # Screen distance validation: at least one of SCREEN_DISTANCE_MM or SCREEN_DISTANCE_TOP_BOTTOM_MM must be provided and valid
+        # Screen distance validation: at least one of SCREEN_DISTANCE or SCREEN_DISTANCE_TOP_BOTTOM must be provided and valid
         has_center = (
-            self.SCREEN_DISTANCE_MM is not None
-            and isinstance(self.SCREEN_DISTANCE_MM, (int, float))
-            and self.SCREEN_DISTANCE_MM > 0
+            self.SCREEN_DISTANCE is not None
+            and isinstance(self.SCREEN_DISTANCE, (int, float))
+            and self.SCREEN_DISTANCE > 0
         )
         has_top_bottom = (
-            self.SCREEN_DISTANCE_TOP_BOTTOM_MM is not None
-            and isinstance(self.SCREEN_DISTANCE_TOP_BOTTOM_MM, list)
-            and len(self.SCREEN_DISTANCE_TOP_BOTTOM_MM) == 2
-            and all(isinstance(x, (int, float)) and x > 0 for x in self.SCREEN_DISTANCE_TOP_BOTTOM_MM)
+            self.SCREEN_DISTANCE_TOP_BOTTOM is not None
+            and isinstance(self.SCREEN_DISTANCE_TOP_BOTTOM, list)
+            and len(self.SCREEN_DISTANCE_TOP_BOTTOM) == 2
+            and all(isinstance(x, (int, float)) and x > 0 for x in self.SCREEN_DISTANCE_TOP_BOTTOM)
         )
         if not (has_center or has_top_bottom):
             raise ValueError(
-                "You must provide at least one valid screen distance: either SCREEN_DISTANCE_MM (center, >0) or SCREEN_DISTANCE_TOP_BOTTOM_MM ([top, bottom], both >0)."
+                "You must provide at least one valid screen distance: either SCREEN_DISTANCE (center, >0) or SCREEN_DISTANCE_TOP_BOTTOM ([top, bottom], both >0)."
             )
-        # Prefer SCREEN_DISTANCE_TOP_BOTTOM_MM if both are valid, and ensure only the valid one is used
+        # Prefer SCREEN_DISTANCE_TOP_BOTTOM if both are valid, and ensure only the valid one is used
         if has_top_bottom:
-            self.SCREEN_DISTANCE_MM = None
+            self.SCREEN_DISTANCE = None
         elif has_center:
-            self.SCREEN_DISTANCE_TOP_BOTTOM_MM = None
+            self.SCREEN_DISTANCE_TOP_BOTTOM = None
 
         # Calibration area proportion validation
         if not isinstance(self.CALIBRATION_AREA_PROPORTION, list) or len(self.CALIBRATION_AREA_PROPORTION) != 2:

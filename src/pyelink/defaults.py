@@ -120,7 +120,7 @@ DISPLAY_INDEX = 0  # Monitor index: 0=primary, 1=secondary, etc.
 # HARDWARE SETTINGS
 # =============================================================================
 ENABLE_SEARCH_LIMITS = "ON"  # ON (default) or OFF
-TRACK_SEARCH_LIMITS = "YES"  # OFF (default) or ON - limits tracking search area
+TRACK_SEARCH_LIMITS = "OFF"  # OFF (default) or ON - limits tracking search area
 AUTOTHRESHOLD_CLICK = "YES"  # YES (default) or NO - auto-adjust threshold on click
 AUTOTHRESHOLD_REPEAT = "YES"  # YES (default) or NO - repeat auto-threshold
 ENABLE_CAMERA_POSITION_DETECT = "ON"  # OFF (default) or ON - camera position detection
