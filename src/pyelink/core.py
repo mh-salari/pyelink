@@ -1218,17 +1218,12 @@ class EyeLink:  # noqa: PLR0904
             # Set calibration pacing (only relevant if automatic calibration is enabled)
             self.set_auto_calibration_pacing(self.settings.PACING_INTERVAL)
 
-            # Execute custom calibration display
-            # Try to open graphics, but skip if already open (for subsequent calibrations)
-            try:
-                pylink.openGraphicsEx(calibration_display)
-            except RuntimeError as e:
-                if "previous EyeLinkCustomDisplay is active" in str(e):
-                    # Graphics already open from previous calibration, continue
-                    pass
-                else:
-                    # Different error, re-raise it
-                    raise
+            # Close any existing graphics to allow color/settings changes between calibrations
+            with contextlib.suppress(Exception):
+                pylink.closeGraphics()
+
+            # Execute custom calibration display with updated settings
+            pylink.openGraphicsEx(calibration_display)
 
             # Record samples during calibration and validation and store in edf file
             if record_samples:
