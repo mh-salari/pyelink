@@ -1234,8 +1234,8 @@ class EyeLink:  # noqa: PLR0904
                 time.sleep(0.1)  # Wait to finish mode transition
                 self.send_command("set_idle_mode")
                 time.sleep(0.1)  # Wait to finish mode transition
-        # Dummy mode - call dummynote if available
-        elif hasattr(calibration_display, "dummynote"):
+        else:
+            # Dummy mode - show dummy calibration
             calibration_display.dummynote()
 
     def start_recording(self, sendlink: bool = False) -> None:

@@ -401,9 +401,19 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
     def dummynote(self) -> None:
         """Display message for dummy mode (no hardware connection)."""
         # Draw Text
-        visual.TextStim(self.window, text="Dummy Connection with EyeLink", color=self.txtcol, font="Arial").draw()
+        visual.TextStim(
+            self.window,
+            text="Dummy Connection with EyeLink - Press SPACE to continue",
+            color=self.txtcol,
+            font="Arial",
+        ).draw()
         self.window.flip()
 
-        # Wait for key press
-        event.waitKeys()
+        # Wait for spacebar press (use display backend to handle Ctrl+C)
+        waiting = True
+        while waiting:
+            events = self.tracker.display.get_events()
+            for evt in events:
+                if evt.get("type") == "keydown" and evt.get("key") == "space":
+                    waiting = False
         self.window.flip()

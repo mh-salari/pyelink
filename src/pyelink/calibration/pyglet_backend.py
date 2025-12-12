@@ -404,7 +404,7 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         self._clear_window()
 
         label = pyglet.text.Label(
-            "Dummy Connection with EyeLink",
+            "Dummy Connection with EyeLink - Press SPACE to continue",
             font_name="Arial",
             font_size=24,
             x=self.width // 2,
@@ -416,11 +416,11 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         label.draw()
         self.window.flip()
 
-        # Wait for key press using display backend events
+        # Wait for spacebar press using display backend events
         while True:
             events = self.tracker.display.get_events()
             for event in events:
-                if event.get("type") == "keydown":
+                if event.get("type") == "keydown" and event.get("key") == "space":
                     self._clear_window()
                     self.window.flip()
                     return

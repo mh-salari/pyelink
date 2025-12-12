@@ -311,16 +311,19 @@ class PygameCalibrationDisplay(CalibrationDisplay):
     def dummynote(self) -> None:
         """Display message for dummy mode (no hardware connection)."""
         self.window.fill(self.backcolor)
-        text_surface = self.font.render("Dummy Connection with EyeLink", True, self.forecolor)
+        text_surface = self.font.render(
+            "Dummy Connection with EyeLink - Press SPACE to continue", True, self.forecolor
+        )
         text_rect = text_surface.get_rect(center=(self.width // 2, self.height // 2))
         self.window.blit(text_surface, text_rect)
         pygame.display.flip()
 
-        # Wait for key press
+        # Wait for spacebar press (use display backend to handle Ctrl+C)
         waiting = True
         while waiting:
-            for event in pygame.event.get():
-                if event.type in {pygame.KEYDOWN, pygame.QUIT}:
+            events = self.tracker.display.get_events()
+            for event in events:
+                if (event.get("type") == "keydown" and event.get("key") == "space") or event.get("type") == "quit":
                     waiting = False
 
         self.window.fill(self.backcolor)
