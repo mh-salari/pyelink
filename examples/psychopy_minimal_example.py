@@ -13,12 +13,15 @@ settings = el.Settings(
     BACKEND="psychopy",
     FULLSCREEN=True,
     DISPLAY_INDEX=0,  # Primary monitor
-    FILENAME="test",
+    FILENAME="psychopy",
     # HOST_IP="dummy",  # Use dummy mode for testing without EyeLink
 )
 
 print("Connecting to EyeLink and creating window...")
 tracker = el.EyeLink(settings, record_raw_data=True)
+
+# Set data save path (used for Ctrl+C cleanup and end_experiment)
+tracker.set_data_save_path("./examples/data/")
 
 # Calibrate (window created automatically by tracker)
 print("Starting calibration...")
@@ -54,5 +57,5 @@ tracker.wait_for_key("space")
 
 # Clean up (closes window automatically)
 print("Closing...")
-tracker.end_experiment("./")
+tracker.end_experiment()
 print("Done!")

@@ -18,6 +18,9 @@ print("Connecting to EyeLink and creating window...")
 # record_raw_data=True enables raw pupil/CR data capture
 tracker = el.EyeLink(settings, record_raw_data=True)
 
+# Set data save path (used for Ctrl+C cleanup and end_experiment)
+tracker.set_data_save_path("./examples/data/")
+
 # Calibrate with sample recording enabled
 # This will record GAZE samples (gaze x,y and pupil area) during calibration/validation
 print("Starting calibration with sample recording...")
@@ -27,4 +30,4 @@ print("Calibration complete!")
 
 # Clean up and save EDF file (closes window automatically)
 print("Saving EDF file...")
-tracker.end_experiment("./")
+tracker.end_experiment()

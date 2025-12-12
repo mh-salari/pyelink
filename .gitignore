@@ -1,4 +1,10 @@
 uv.lock
+_tmp/*
+
+# Example data directory
+examples/data/
+*.edf
+*.asc
 
 # Python bytecode
 __pycache__/

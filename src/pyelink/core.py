@@ -1426,8 +1426,12 @@ class EyeLink:  # noqa: PLR0904
         """
         self._ensure_connected()
 
-        # Generate file path
-        fpath = save_path + self.edfname
+        # Ensure the save directory exists and get absolute path
+        save_dir = Path(save_path).resolve()
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate full file path using Path for proper handling
+        fpath = str(save_dir / self.edfname)
 
         # Set tracker to offline mode
         self.set_offline_mode()
