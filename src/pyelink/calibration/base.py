@@ -24,17 +24,19 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
     drawing calibration targets, handling input, and displaying the eye camera view.
     """
 
-    def __init__(self, settings: object, tracker: object) -> None:
+    def __init__(self, settings: object, tracker: object, mode: str = "normal") -> None:
         """Initialize calibration display.
 
         Args:
             settings: Settings object with configuration
             tracker: EyeLink tracker instance
+            mode: Calibration mode - "normal", "calibration-only", or "validation-only"
 
         """
         pylink.EyeLinkCustomDisplay.__init__(self)
         self.settings = settings
         self.sres = settings.SCREEN_RES
+        self.mode = mode
         self.set_tracker(tracker)
 
     def set_tracker(self, tracker: object) -> None:

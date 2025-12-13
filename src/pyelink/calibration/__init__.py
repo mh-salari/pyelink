@@ -136,7 +136,7 @@ def get_backend(name: str | None = None) -> object:
     return backend
 
 
-def create_calibration(settings: object, tracker: object) -> object:
+def create_calibration(settings: object, tracker: object, mode: str = "normal") -> object:
     """Factory function to create calibration display.
 
     Uses the tracker's internal window (created based on settings.BACKEND).
@@ -145,6 +145,7 @@ def create_calibration(settings: object, tracker: object) -> object:
     Args:
         settings: Settings object with configuration (includes BACKEND setting)
         tracker: EyeLink tracker instance (with display.window)
+        mode: Calibration mode - "normal", "calibration-only", or "validation-only"
 
     Returns:
         CalibrationDisplay instance using tracker's internal window
@@ -173,10 +174,10 @@ def create_calibration(settings: object, tracker: object) -> object:
     """
     # Get backend from settings
     backend = settings.BACKEND
-    logger.info("Creating calibration display for backend: %s", backend)
+    logger.info("Creating calibration display for backend: %s (mode: %s)", backend, mode)
 
     calibration_class = get_backend(backend)
-    return calibration_class(settings, tracker)
+    return calibration_class(settings, tracker, mode=mode)
 
 
 __all__ = [

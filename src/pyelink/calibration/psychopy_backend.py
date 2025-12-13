@@ -20,15 +20,16 @@ logger = logging.getLogger(__name__)
 class PsychopyCalibrationDisplay(CalibrationDisplay):
     """PsychoPy implementation of EyeLink calibration display."""
 
-    def __init__(self, settings: object, tracker: object) -> None:
+    def __init__(self, settings: object, tracker: object, mode: str = "normal") -> None:
         """Initialize PsychoPy calibration display.
 
         Args:
             settings: Settings object with configuration
             tracker: EyeLink tracker instance (with display.window attribute)
+            mode: Calibration mode - "normal", "calibration-only", or "validation-only"
 
         """
-        super().__init__(settings, tracker)
+        super().__init__(settings, tracker, mode)
         self.settings = settings
 
         # Get PsychoPy window from tracker
@@ -123,6 +124,11 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
     def get_input_key(self) -> list:
         """Get keyboard input and convert to pylink key codes.
 
+        Filters 'c' and 'v' keys based on calibration mode:
+        - "normal": both 'c' and 'v' enabled
+        - "calibration-only": only 'c' enabled, 'v' disabled
+        - "validation-only": only 'v' enabled, 'c' disabled
+
         Returns:
             list: List of pylink.KeyInput objects
 
@@ -165,6 +171,12 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
             # Skip other keys with Ctrl modifier
             if mods.get("ctrl", False):
                 continue
+
+            # Filter 'c' and 'v' keys based on mode
+            if char == "c" and self.mode == "validation-only":
+                continue  # Skip 'c' in validation-only mode
+            if char == "v" and self.mode == "calibration-only":
+                continue  # Skip 'v' in calibration-only mode
 
             # Lookup key in the general key map
             pylink_key = key_map.get(char)

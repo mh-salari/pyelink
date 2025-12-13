@@ -1186,7 +1186,7 @@ class EyeLink:  # noqa: PLR0904
         self._ensure_connected()
         self.tracker.drawText(text, position)
 
-    def calibrate(self, record_samples: bool = False) -> None:
+    def calibrate(self, record_samples: bool = False, mode: str = "normal") -> None:
         """Calibrate eye-tracker using internal display window.
 
         Creates calibration display automatically based on settings.BACKEND
@@ -1194,14 +1194,22 @@ class EyeLink:  # noqa: PLR0904
 
         Args:
             record_samples: Record samples during calibration and validation
+            mode: Calibration mode - "normal" (both cal/val), "calibration-only", or "validation-only"
 
         Example:
             tracker = EyeLink(settings)
-            tracker.calibrate()  # No window parameter needed
+            tracker.calibrate()  # Normal mode - both calibration and validation available
+            tracker.calibrate(mode="calibration-only")  # Only calibration, 'v' key disabled
+            tracker.calibrate(mode="validation-only")  # Only validation, 'c' key disabled
 
         """
+        # Validate mode parameter
+        valid_modes = {"normal", "calibration-only", "validation-only"}
+        if mode not in valid_modes:
+            raise ValueError(f"Invalid mode: {mode}. Must be one of: {', '.join(sorted(valid_modes))}")
+
         # Create calibration display using internal window
-        calibration_display = create_calibration(self.settings, self)
+        calibration_display = create_calibration(self.settings, self, mode=mode)
 
         # Set the tracker on the calibration display to self (which has the pylink tracker)
         calibration_display.set_tracker(self)
