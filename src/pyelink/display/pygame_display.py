@@ -36,12 +36,12 @@ class PygameDisplay(BaseDisplay):
         """
         pygame.init()
 
-        flags = pygame.FULLSCREEN if settings.FULLSCREEN else 0
+        flags = pygame.FULLSCREEN if settings.fullscreen else 0
 
         window = pygame.display.set_mode(
-            settings.SCREEN_RES,
+            settings.screen_res,
             flags,
-            display=settings.DISPLAY_INDEX,
+            display=settings.display_index,
         )
 
         pygame.display.set_caption("PyELink - Pygame Backend")

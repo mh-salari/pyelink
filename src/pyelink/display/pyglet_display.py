@@ -49,12 +49,12 @@ class PygletDisplay(BaseDisplay):
         display = pyglet.display.get_display()
         screens = display.get_screens()
 
-        screen = screens[0] if len(screens) <= settings.DISPLAY_INDEX else screens[settings.DISPLAY_INDEX]
+        screen = screens[0] if len(screens) <= settings.display_index else screens[settings.display_index]
 
         window = pyglet.window.Window(
-            width=settings.SCREEN_RES[0],
-            height=settings.SCREEN_RES[1],
-            fullscreen=settings.FULLSCREEN,
+            width=settings.screen_res[0],
+            height=settings.screen_res[1],
+            fullscreen=settings.fullscreen,
             screen=screen,
             caption="PyELink - Pyglet Backend",
         )

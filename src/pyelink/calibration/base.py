@@ -35,7 +35,7 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
         """
         pylink.EyeLinkCustomDisplay.__init__(self)
         self.settings = settings
-        self.sres = settings.SCREEN_RES
+        self.sres = settings.screen_res
         self.mode = mode
         self.set_tracker(tracker)
 
@@ -49,11 +49,11 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
         self.tracker = tracker
         self.tracker_version = tracker.get_tracker_version()
         if self.tracker_version >= 3:
-            self.tracker.send_command(f"enable_search_limits={self.settings.ENABLE_SEARCH_LIMITS}")
-            self.tracker.send_command(f"track_search_limits={self.settings.TRACK_SEARCH_LIMITS}")
-            self.tracker.send_command(f"autothreshold_click={self.settings.AUTOTHRESHOLD_CLICK}")
-            self.tracker.send_command(f"autothreshold_repeat={self.settings.AUTOTHRESHOLD_REPEAT}")
-            self.tracker.send_command(f"enable_camera_position_detect={self.settings.ENABLE_CAMERA_POSITION_DETECT}")
+            self.tracker.send_command(f"enable_search_limits={self.settings.enable_search_limits}")
+            self.tracker.send_command(f"track_search_limits={self.settings.track_search_limits}")
+            self.tracker.send_command(f"autothreshold_click={self.settings.autothreshold_click}")
+            self.tracker.send_command(f"autothreshold_repeat={self.settings.autothreshold_repeat}")
+            self.tracker.send_command(f"enable_camera_position_detect={self.settings.enable_camera_position_detect}")
 
     @abstractmethod
     def setup_cal_display(self) -> None:

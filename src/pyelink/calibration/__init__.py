@@ -139,7 +139,7 @@ def get_backend(name: str | None = None) -> object:
 def create_calibration(settings: object, tracker: object, mode: str = "normal") -> object:
     """Factory function to create calibration display.
 
-    Uses the tracker's internal window (created based on settings.BACKEND).
+    Uses the tracker's internal window (created based on settings.backend).
     The calibration display accesses the window via tracker.display.window.
 
     Args:
@@ -173,7 +173,7 @@ def create_calibration(settings: object, tracker: object, mode: str = "normal") 
 
     """
     # Get backend from settings
-    backend = settings.BACKEND
+    backend = settings.backend
     logger.info("Creating calibration display for backend: %s (mode: %s)", backend, mode)
 
     calibration_class = get_backend(backend)

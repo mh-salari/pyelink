@@ -8,10 +8,11 @@ import pyelink as el
 
 # Configure tracker - tracker creates and owns the window
 settings = el.Settings(
-    BACKEND="pyglet",  # Change to "psychopy" or "pyglet" as needed
-    FULLSCREEN=True,
-    DISPLAY_INDEX=0,  # Primary monitor
-    FILENAME="cal_val",
+    backend="pyglet",  # Change to "psychopy" or "pyglet" as needed
+    fullscreen=True,
+    display_index=0,  # Primary monitor
+    filename="cal_val",
+    # host_ip="dummy",  # Use dummy mode for testing without EyeLink
 )
 
 print("Connecting to EyeLink and creating window...")

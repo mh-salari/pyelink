@@ -41,8 +41,8 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         self.batch = pyglet.graphics.Batch()
 
         # Colors (RGBA)
-        self.backcolor = (*settings.CAL_BACKGROUND_COLOR, 255)
-        self.forecolor = (*settings.CALIBRATION_TEXT_COLOR, 255)
+        self.backcolor = (*settings.cal_background_color, 255)
+        self.forecolor = (*settings.calibration_text_color, 255)
 
         # Generate target image (convert to pyglet via in-memory bytes)
         pil_image = generate_target(settings)
@@ -82,9 +82,9 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         self._clear_window()
 
         # Draw instruction text centered on screen (if not empty)
-        if self.settings.CALIBRATION_INSTRUCTION_TEXT:
+        if self.settings.calibration_instruction_text:
             instructions = pyglet.text.Label(
-                self.settings.CALIBRATION_INSTRUCTION_TEXT,
+                self.settings.calibration_instruction_text,
                 font_name="Arial",
                 font_size=16,
                 x=self.width // 2,

@@ -24,7 +24,7 @@ def generate_target(
 
     Args:
         settings: Settings object with screen configuration.
-        target_type: Override for settings.TARGET_TYPE. One of:
+        target_type: Override for settings.target_type. One of:
             "A", "B", "C", "AB", "ABC", "CIRCLE", or "IMAGE"
 
     Returns:
@@ -35,7 +35,7 @@ def generate_target(
         FileNotFoundError: If IMAGE path doesn't exist.
 
     """
-    target_type = (target_type or settings.TARGET_TYPE).upper()
+    target_type = (target_type or settings.target_type).upper()
 
     if target_type == "IMAGE":
         return _load_image_target(settings)
@@ -61,22 +61,22 @@ def _generate_fixation_target(settings: object, style: str) -> Image.Image:
 
     """
     # Use RGBA colors directly from settings
-    center_color = settings.FIXATION_CENTER_COLOR
-    outer_color = settings.FIXATION_OUTER_COLOR
-    cross_color = settings.FIXATION_CROSS_COLOR
+    center_color = settings.fixation_center_color
+    outer_color = settings.fixation_outer_color
+    cross_color = settings.fixation_cross_color
 
     result = fixation_target(
-        screen_width_mm=settings.SCREEN_WIDTH,
-        screen_height_mm=settings.SCREEN_HEIGHT,
-        screen_width_px=settings.SCREEN_RES[0],
-        screen_height_px=settings.SCREEN_RES[1],
-        viewing_distance_mm=(settings.SCREEN_DISTANCE_TOP_BOTTOM[0] + settings.SCREEN_DISTANCE_TOP_BOTTOM[1]) / 2
-        if settings.SCREEN_DISTANCE_TOP_BOTTOM
-        else settings.SCREEN_DISTANCE,
+        screen_width_mm=settings.screen_width,
+        screen_height_mm=settings.screen_height,
+        screen_width_px=settings.screen_res[0],
+        screen_height_px=settings.screen_res[1],
+        viewing_distance_mm=(settings.screen_distance_top_bottom[0] + settings.screen_distance_top_bottom[1]) / 2
+        if settings.screen_distance_top_bottom
+        else settings.screen_distance,
         target_type=style,
-        center_diameter_in_degrees=settings.FIXATION_CENTER_DIAMETER,
-        outer_diameter_in_degrees=settings.FIXATION_OUTER_DIAMETER,
-        cross_width_in_degrees=settings.FIXATION_CROSS_WIDTH,
+        center_diameter_in_degrees=settings.fixation_center_diameter,
+        outer_diameter_in_degrees=settings.fixation_outer_diameter,
+        cross_width_in_degrees=settings.fixation_cross_width,
         center_color=center_color,
         outer_color=outer_color,
         cross_color=cross_color,
@@ -102,10 +102,10 @@ def _generate_circle_target(settings: object) -> Image.Image:
         PIL.Image.Image: RGBA image with transparent background.
 
     """
-    outer_r = settings.CIRCLE_OUTER_RADIUS
-    inner_r = settings.CIRCLE_INNER_RADIUS
-    outer_color = settings.CIRCLE_OUTER_COLOR
-    inner_color = settings.CIRCLE_INNER_COLOR
+    outer_r = settings.circle_outer_radius
+    inner_r = settings.circle_inner_radius
+    outer_color = settings.circle_outer_color
+    inner_color = settings.circle_inner_color
 
     # Create image large enough for the target
     size = outer_r * 2 + 2
@@ -143,7 +143,7 @@ def _load_image_target(settings: object) -> Image.Image:
         FileNotFoundError: If the image file doesn't exist.
 
     """
-    path = settings.TARGET_IMAGE_PATH
+    path = settings.target_image_path
     if not path:
         raise ValueError("TARGET_TYPE='IMAGE' but TARGET_IMAGE_PATH is not set")
 

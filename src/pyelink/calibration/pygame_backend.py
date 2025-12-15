@@ -35,8 +35,8 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         self.width, self.height = self.window.get_size()
 
         # Colors
-        self.backcolor = settings.CAL_BACKGROUND_COLOR
-        self.forecolor = settings.CALIBRATION_TEXT_COLOR
+        self.backcolor = settings.cal_background_color
+        self.forecolor = settings.calibration_text_color
         logger.info("PygameCalibrationDisplay initialized.")
 
         # Generate target image
@@ -69,8 +69,8 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         self.window.fill(self.backcolor)
 
         # Draw instruction text centered on screen (if not empty)
-        if self.settings.CALIBRATION_INSTRUCTION_TEXT:
-            instr_surface = self.small_font.render(self.settings.CALIBRATION_INSTRUCTION_TEXT, True, self.forecolor)
+        if self.settings.calibration_instruction_text:
+            instr_surface = self.small_font.render(self.settings.calibration_instruction_text, True, self.forecolor)
             instr_rect = instr_surface.get_rect(center=(self.width // 2, self.height // 2))
             self.window.blit(instr_surface, instr_rect)
 

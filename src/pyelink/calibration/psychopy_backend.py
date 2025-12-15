@@ -41,9 +41,9 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
         # Store original background color and set calibration colors
         # Convert RGB (0-255) to PsychoPy range (-1 to 1)
         self.original_color = self.window.color
-        rgb = settings.CAL_BACKGROUND_COLOR
+        rgb = settings.cal_background_color
         self.backcolor = [(c / 255.0) * 2 - 1 for c in rgb]
-        text_rgb = settings.CALIBRATION_TEXT_COLOR
+        text_rgb = settings.calibration_text_color
         self.txtcol = [(c / 255.0) * 2 - 1 for c in text_rgb]
 
         # Set window to calibration background color
@@ -73,10 +73,10 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
     def setup_cal_display(self) -> None:
         """Initialize calibration display with instructions."""
         # Draw instruction text centered on screen (if not empty)
-        if self.settings.CALIBRATION_INSTRUCTION_TEXT:
+        if self.settings.calibration_instruction_text:
             instr_stim = visual.TextStim(
                 self.window,
-                self.settings.CALIBRATION_INSTRUCTION_TEXT,
+                self.settings.calibration_instruction_text,
                 pos=(0, 0),
                 color=tuple(self.txtcol),
                 units="pix",

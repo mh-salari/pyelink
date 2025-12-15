@@ -10,10 +10,11 @@ Example:
     >>> import pyelink as el
     >>>
     >>> # Configure tracker with backend
-    >>> settings = el.Settings()
-    >>> settings.BACKEND = 'pygame'  # or 'psychopy', 'pyglet'
-    >>> settings.FULLSCREEN = True
-    >>> settings.SCREEN_RES = [1920, 1080]
+    >>> settings = el.Settings(
+    ...     backend='pygame',  # or 'psychopy', 'pyglet'
+    ...     fullscreen=True,
+    ...     screen_res=[1920, 1080]
+    ... )
     >>>
     >>> # Tracker creates window automatically
     >>> tracker = el.EyeLink(settings)

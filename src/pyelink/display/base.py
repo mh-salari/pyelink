@@ -69,7 +69,7 @@ class BaseDisplay(ABC):
     def _create_window(self, settings: object) -> Any:  # noqa: ANN401
         """Create backend-specific window.
 
-        Uses settings.SCREEN_RES, settings.FULLSCREEN, and settings.DISPLAY_INDEX
+        Uses settings.screen_res, settings.fullscreen, and settings.display_index
         to create appropriately configured window.
 
         Args:

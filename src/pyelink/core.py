@@ -9,22 +9,20 @@ from __future__ import annotations
 
 import atexit
 import contextlib
-import json
 import logging
 import os
 import signal
 import sys
 import time
-from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Self
 
 import pylink
 
-from . import defaults
 from .calibration import create_calibration
 from .data import DataBuffer
 from .events import EventProcessor
+from .settings import Settings
 
 if TYPE_CHECKING:
     import types
@@ -39,402 +37,6 @@ if not logger.handlers:
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     logger.setLevel(logging.INFO)
-
-
-@dataclass
-class Settings:
-    """Default settings for EyeLink tracker configuration.
-
-    All default values come from pyelink.defaults module. Override any attribute after instantiation.
-    """
-
-    # File settings
-    FILENAME: str = defaults.FILENAME  # Name of the EDF file to be created for each session
-    FILEPATH: str = defaults.FILEPATH  # Path where the EDF file will be saved (empty string = current directory)
-
-    # Sampling settings
-    SAMPLE_RATE: int = defaults.SAMPLE_RATE  # Always use 1000 Hz; lower rates are filtered/downsampled versions
-
-    # Calibration settings
-    N_CAL_TARGETS: int = defaults.N_CAL_TARGETS  # Number of calibration points (9 is standard; 13 for widescreens)
-    ENABLE_AUTOMATIC_CALIBRATION: bool = defaults.ENABLE_AUTOMATIC_CALIBRATION  # Auto-advance vs manual calibration
-    PACING_INTERVAL: int = defaults.PACING_INTERVAL  # Time in ms to fixate each target during calibration
-    CALIBRATION_CORNER_SCALING: float = (
-        defaults.CALIBRATION_CORNER_SCALING
-    )  # How far corner calibration points are from the screen edge (1=default; <1 closer to center, >1 closer to edge)
-    VALIDATION_CORNER_SCALING: float = (
-        defaults.VALIDATION_CORNER_SCALING
-    )  # How far corner validation points are from the screen edge (same scaling as above)
-    CALIBRATION_AREA_PROPORTION: list[float] = field(
-        default_factory=defaults.CALIBRATION_AREA_PROPORTION.copy
-    )  # [width, height] as proportion of screen used for calibration targets (e.g., 0.9 = 90% of screen)
-    VALIDATION_AREA_PROPORTION: list[float] = field(
-        default_factory=defaults.VALIDATION_AREA_PROPORTION.copy
-    )  # [width, height] as proportion of screen used for validation targets
-
-    # Target settings
-    TARGET_TYPE: str = defaults.TARGET_TYPE  # "ABC", "AB", "A", "B", "C", "CIRCLE", or "IMAGE" (see docs)
-    TARGET_IMAGE_PATH: str | None = defaults.TARGET_IMAGE_PATH  # Path to image file (for TARGET_TYPE="IMAGE")
-    CAL_BACKGROUND_COLOR: tuple[int, int, int] = defaults.CAL_BACKGROUND_COLOR  # RGB background color for calibration
-    CALIBRATION_INSTRUCTION_TEXT: str = defaults.CALIBRATION_INSTRUCTION_TEXT  # Instruction text on calibration screen
-    CALIBRATION_TEXT_COLOR: tuple[int, int, int] = defaults.CALIBRATION_TEXT_COLOR  # RGB text color for instructions
-
-    # Fixation target settings (for A/B/C/AB/ABC types)
-    FIXATION_TARGET_SCALE: float = defaults.FIXATION_TARGET_SCALE  # Scale for all fixation target components
-    FIXATION_CENTER_DIAMETER: float = defaults.FIXATION_CENTER_DIAMETER  # "A" component (deg visual angle)
-    FIXATION_OUTER_DIAMETER: float = defaults.FIXATION_OUTER_DIAMETER  # "B" component (deg visual angle)
-    FIXATION_CROSS_WIDTH: float = defaults.FIXATION_CROSS_WIDTH  # "C" component (deg visual angle)
-    FIXATION_CENTER_COLOR: tuple[int, int, int, int] = defaults.FIXATION_CENTER_COLOR  # RGBA
-    FIXATION_OUTER_COLOR: tuple[int, int, int, int] = defaults.FIXATION_OUTER_COLOR  # RGBA
-    FIXATION_CROSS_COLOR: tuple[int, int, int, int] = defaults.FIXATION_CROSS_COLOR  # RGBA
-
-    # Circle target settings (for TARGET_TYPE="CIRCLE")
-    CIRCLE_OUTER_RADIUS: int = defaults.CIRCLE_OUTER_RADIUS  # Outer radius in pixels
-    CIRCLE_INNER_RADIUS: int = defaults.CIRCLE_INNER_RADIUS  # Inner radius in pixels
-    CIRCLE_OUTER_COLOR: tuple[int, int, int] = defaults.CIRCLE_OUTER_COLOR  # RGB
-    CIRCLE_INNER_COLOR: tuple[int, int, int] = defaults.CIRCLE_INNER_COLOR  # RGB
-
-    # Screen settings (ALL MEASUREMENTS IN MILLIMETERS)
-    SCREEN_RES: list[int] = field(default_factory=defaults.SCREEN_RES.copy)  # [width, height] in pixels
-    SCREEN_WIDTH: float = defaults.SCREEN_WIDTH  # Physical width in mm
-    SCREEN_HEIGHT: float = defaults.SCREEN_HEIGHT  # Physical height in mm
-    CAMERA_TO_SCREEN_DISTANCE: float = defaults.CAMERA_TO_SCREEN_DISTANCE  # Distance from camera to screen in mm
-    SCREEN_DISTANCE: float | None = (
-        defaults.SCREEN_DISTANCE
-    )  # Distance from eye to center of screen in mm (float or None)
-    SCREEN_DISTANCE_TOP_BOTTOM: list[float] | None = field(
-        default_factory=lambda: defaults.SCREEN_DISTANCE_TOP_BOTTOM.copy()
-        if defaults.SCREEN_DISTANCE_TOP_BOTTOM
-        else None
-    )  # [top_mm, bottom_mm] (list of two positive numbers or None)
-    CAMERA_LENS_FOCAL_LENGTH: int | None = (
-        defaults.CAMERA_LENS_FOCAL_LENGTH
-    )  # Remote mode lens focal length in mm (optional)
-
-    # Display settings
-    BACKEND: str = defaults.BACKEND  # Visualization backend: "pygame", "psychopy", or "pyglet"
-    FULLSCREEN: bool = defaults.FULLSCREEN  # True for fullscreen window, False for windowed mode
-    DISPLAY_INDEX: int = defaults.DISPLAY_INDEX  # Monitor index: 0=primary, 1=secondary, etc.
-
-    # Tracking settings
-    PUPIL_TRACKING_MODE: str = defaults.PUPIL_TRACKING_MODE  # "CENTROID" or "ELLIPSE"
-    PUPIL_SIZE_MODE: str = defaults.PUPIL_SIZE_MODE  # 'AREA' or 'DIAMETER'
-    HEURISTIC_FILTER: list[int] = field(
-        default_factory=defaults.HEURISTIC_FILTER.copy
-    )  # [link, file] (0=off, 1=normal, 2=extra)
-    SET_HEURISTIC_FILTER: bool = (
-        defaults.SET_HEURISTIC_FILTER
-    )  # Activate filter or not (must be set every time recording starts)
-
-    # Data filter settings
-    FILE_EVENT_FILTER: str = defaults.FILE_EVENT_FILTER  # Which events to record to file
-    LINK_EVENT_FILTER: str = defaults.LINK_EVENT_FILTER  # Which events to record over link
-    LINK_SAMPLE_DATA: str = defaults.LINK_SAMPLE_DATA  # Sample fields over link
-    FILE_SAMPLE_DATA: str = defaults.FILE_SAMPLE_DATA  # Sample fields to file
-
-    # Recording settings
-    RECORD_SAMPLES_TO_FILE: int = defaults.RECORD_SAMPLES_TO_FILE  # 1=on, 0=off
-    RECORD_EVENTS_TO_FILE: int = defaults.RECORD_EVENTS_TO_FILE  # 1=on, 0=off
-    RECORD_SAMPLE_OVER_LINK: int = defaults.RECORD_SAMPLE_OVER_LINK  # 1=on, 0=off
-    RECORD_EVENT_OVER_LINK: int = defaults.RECORD_EVENT_OVER_LINK  # 1=on, 0=off
-
-    # Hardware settings (not in defaults - specific to setup)
-    ENABLE_SEARCH_LIMITS: str = defaults.ENABLE_SEARCH_LIMITS  # ON (default) or OFF
-    TRACK_SEARCH_LIMITS: str = defaults.TRACK_SEARCH_LIMITS  # YES (default) or OFF
-    AUTOTHRESHOLD_CLICK: str = defaults.AUTOTHRESHOLD_CLICK  # YES (default) or NO
-    AUTOTHRESHOLD_REPEAT: str = defaults.AUTOTHRESHOLD_REPEAT  # YES (default) or NO
-    ENABLE_CAMERA_POSITION_DETECT: str = defaults.ENABLE_CAMERA_POSITION_DETECT  # OFF (default) or ON
-    ILLUMINATION_POWER: int = defaults.ILLUMINATION_POWER  # 'elcl_tt_power' setting: 1=100%, 2=75%, 3=50%
-    HOST_IP: str = defaults.HOST_IP  # IP address of EyeLink Host PC
-    ENABLE_DUAL_CORNEAL_TRACKING: bool = defaults.ENABLE_DUAL_CORNEAL_TRACKING  # Enable tracking of secondary CRs
-
-    # Physical setup configuration
-    EL_CONFIGURATION: str = (
-        defaults.EL_CONFIGURATION
-    )  # Options: MTABLER, BTABLER, RTABLER, RBTABLER, AMTABLER, ARTABLER, BTOWER
-    EYE_TRACKED: str = (
-        defaults.EYE_TRACKED
-    )  # BOTH/LEFT/RIGHT. Sets binocular_enabled=YES for both, or active_eye=LEFT/RIGHT for monocular
-
-    def __post_init__(self) -> None:
-        """Validate settings after initialization."""
-        # Sampling rate validation
-        if self.SAMPLE_RATE not in {250, 500, 1000, 2000}:
-            raise ValueError(f"Invalid SAMPLE_RATE: {self.SAMPLE_RATE}. Must be one of: 250, 500, 1000, 2000")
-
-        # Calibration targets validation
-        if self.N_CAL_TARGETS not in {3, 5, 9, 13}:
-            raise ValueError(f"Invalid N_CAL_TARGETS: {self.N_CAL_TARGETS}. Must be one of: 3, 5, 9, 13")
-
-        # Screen resolution validation - must be list of 2 positive integers
-        if not isinstance(self.SCREEN_RES, list) or len(self.SCREEN_RES) != 2:
-            raise ValueError(f"SCREEN_RES must be a list of 2 integers, got: {self.SCREEN_RES}")
-        if not all(isinstance(x, int) and x > 0 for x in self.SCREEN_RES):
-            raise ValueError(f"SCREEN_RES values must be positive integers, got: {self.SCREEN_RES}")
-
-        # Screen dimensions validation - must be positive non-zero values
-        if self.SCREEN_WIDTH <= 0:
-            raise ValueError(f"SCREEN_WIDTH must be positive, got: {self.SCREEN_WIDTH}")
-        if self.SCREEN_HEIGHT <= 0:
-            raise ValueError(f"SCREEN_HEIGHT must be positive, got: {self.SCREEN_HEIGHT}")
-
-        # Camera to screen distance validation - must be positive non-zero
-        if self.CAMERA_TO_SCREEN_DISTANCE <= 0:
-            raise ValueError(f"CAMERA_TO_SCREEN_DISTANCE must be positive, got: {self.CAMERA_TO_SCREEN_DISTANCE}")
-
-        # Screen distance validation: at least one of SCREEN_DISTANCE or SCREEN_DISTANCE_TOP_BOTTOM must be provided and valid
-        has_center = (
-            self.SCREEN_DISTANCE is not None
-            and isinstance(self.SCREEN_DISTANCE, (int, float))
-            and self.SCREEN_DISTANCE > 0
-        )
-        has_top_bottom = (
-            self.SCREEN_DISTANCE_TOP_BOTTOM is not None
-            and isinstance(self.SCREEN_DISTANCE_TOP_BOTTOM, list)
-            and len(self.SCREEN_DISTANCE_TOP_BOTTOM) == 2
-            and all(isinstance(x, (int, float)) and x > 0 for x in self.SCREEN_DISTANCE_TOP_BOTTOM)
-        )
-        if not (has_center or has_top_bottom):
-            raise ValueError(
-                "You must provide at least one valid screen distance: either SCREEN_DISTANCE (center, >0) or SCREEN_DISTANCE_TOP_BOTTOM ([top, bottom], both >0)."
-            )
-        # Prefer SCREEN_DISTANCE_TOP_BOTTOM if both are valid, and ensure only the valid one is used
-        if has_top_bottom:
-            self.SCREEN_DISTANCE = None
-        elif has_center:
-            self.SCREEN_DISTANCE_TOP_BOTTOM = None
-
-        # Calibration area proportion validation
-        if not isinstance(self.CALIBRATION_AREA_PROPORTION, list) or len(self.CALIBRATION_AREA_PROPORTION) != 2:
-            raise ValueError(
-                f"CALIBRATION_AREA_PROPORTION must be a list of 2 numbers, got: {self.CALIBRATION_AREA_PROPORTION}"
-            )
-        if not (0 < self.CALIBRATION_AREA_PROPORTION[0] <= 1.0 and 0 < self.CALIBRATION_AREA_PROPORTION[1] <= 1.0):
-            raise ValueError(
-                f"CALIBRATION_AREA_PROPORTION values must be in (0, 1], got: {self.CALIBRATION_AREA_PROPORTION}"
-            )
-
-        # Validation area proportion validation
-        if not isinstance(self.VALIDATION_AREA_PROPORTION, list) or len(self.VALIDATION_AREA_PROPORTION) != 2:
-            raise ValueError(
-                f"VALIDATION_AREA_PROPORTION must be a list of 2 numbers, got: {self.VALIDATION_AREA_PROPORTION}"
-            )
-        if not (0 < self.VALIDATION_AREA_PROPORTION[0] <= 1.0 and 0 < self.VALIDATION_AREA_PROPORTION[1] <= 1.0):
-            raise ValueError(
-                f"VALIDATION_AREA_PROPORTION values must be in (0, 1], got: {self.VALIDATION_AREA_PROPORTION}"
-            )
-
-        # Eye tracked validation (case-insensitive)
-        valid_eyes = {"left", "right", "both"}
-        if str(self.EYE_TRACKED).lower() not in valid_eyes:
-            raise ValueError(f"Invalid EYE_TRACKED: {self.EYE_TRACKED}. Must be one of: 'Left', 'Right', 'Both'")
-
-        # Pupil tracking mode validation (case-insensitive)
-        valid_pupil_modes = {"centroid", "ellipse"}
-        if str(self.PUPIL_TRACKING_MODE).lower() not in valid_pupil_modes:
-            raise ValueError(
-                f"Invalid PUPIL_TRACKING_MODE: {self.PUPIL_TRACKING_MODE}. Must be 'CENTROID' or 'ELLIPSE'"
-            )
-
-        # Pupil size mode validation (case-insensitive)
-        valid_pupil_size_modes = {"area", "diameter"}
-        if str(self.PUPIL_SIZE_MODE).lower() not in valid_pupil_size_modes:
-            raise ValueError(f"Invalid PUPIL_SIZE_MODE: {self.PUPIL_SIZE_MODE}. Must be 'AREA' or 'DIAMETER'")
-
-        # Heuristic filter validation
-        if not isinstance(self.HEURISTIC_FILTER, list) or len(self.HEURISTIC_FILTER) != 2:
-            raise ValueError(f"HEURISTIC_FILTER must be a list of 2 integers, got: {self.HEURISTIC_FILTER}")
-        if not all(isinstance(x, int) and 0 <= x <= 2 for x in self.HEURISTIC_FILTER):
-            raise ValueError(f"HEURISTIC_FILTER values must be integers 0-2, got: {self.HEURISTIC_FILTER}")
-
-        # Illumination power validation
-        if self.ILLUMINATION_POWER not in {1, 2, 3}:
-            raise ValueError(
-                f"Invalid ILLUMINATION_POWER: {self.ILLUMINATION_POWER}. Must be 1 (100%), 2 (75%), or 3 (50%)"
-            )
-
-        # Target type validation
-        valid_target_types = {"ABC", "AB", "A", "B", "C", "CIRCLE", "IMAGE"}
-        if self.TARGET_TYPE not in valid_target_types:
-            raise ValueError(
-                f"Invalid TARGET_TYPE: {self.TARGET_TYPE}. Must be one of: {', '.join(sorted(valid_target_types))}"
-            )
-
-        # Target image path validation
-        if self.TARGET_TYPE == "IMAGE" and not self.TARGET_IMAGE_PATH:
-            raise ValueError("TARGET_IMAGE_PATH must be provided when TARGET_TYPE is 'IMAGE'")
-
-        # EyeLink configuration validation
-        valid_configurations = {"MTABLER", "BTABLER", "RTABLER", "RBTABLER", "AMTABLER", "ARTABLER", "BTOWER"}
-        if self.EL_CONFIGURATION not in valid_configurations:
-            raise ValueError(
-                f"Invalid EL_CONFIGURATION: {self.EL_CONFIGURATION}. "
-                f"Must be one of: {', '.join(sorted(valid_configurations))}"
-            )
-
-        # RGB color validation helper
-        def _validate_rgb_color(color: tuple, name: str) -> None:
-            if not isinstance(color, tuple) or len(color) != 3:
-                raise ValueError(f"{name} must be a tuple of 3 integers (R, G, B), got: {color}")
-            if not all(isinstance(x, int) and 0 <= x <= 255 for x in color):
-                raise ValueError(f"{name} values must be integers 0-255, got: {color}")
-
-        # RGBA color validation helper
-        def _validate_rgba_color(color: tuple, name: str) -> None:
-            if not isinstance(color, tuple) or len(color) != 4:
-                raise ValueError(f"{name} must be a tuple of 4 integers (R, G, B, A), got: {color}")
-            if not all(isinstance(x, int) and 0 <= x <= 255 for x in color):
-                raise ValueError(f"{name} values must be integers 0-255, got: {color}")
-
-        # Validate RGBA color settings (fixation targets)
-        _validate_rgba_color(self.FIXATION_CENTER_COLOR, "FIXATION_CENTER_COLOR")
-        _validate_rgba_color(self.FIXATION_OUTER_COLOR, "FIXATION_OUTER_COLOR")
-        _validate_rgba_color(self.FIXATION_CROSS_COLOR, "FIXATION_CROSS_COLOR")
-
-        # Validate RGB color settings (circle targets and calibration)
-        _validate_rgb_color(self.CIRCLE_OUTER_COLOR, "CIRCLE_OUTER_COLOR")
-        _validate_rgb_color(self.CIRCLE_INNER_COLOR, "CIRCLE_INNER_COLOR")
-        _validate_rgb_color(self.CAL_BACKGROUND_COLOR, "CAL_BACKGROUND_COLOR")
-        _validate_rgb_color(self.CALIBRATION_TEXT_COLOR, "CALIBRATION_TEXT_COLOR")
-
-        # Validate fixation target scale and dimensions (must be positive)
-        if self.FIXATION_TARGET_SCALE <= 0:
-            raise ValueError(f"FIXATION_TARGET_SCALE must be positive, got: {self.FIXATION_TARGET_SCALE}")
-        if self.FIXATION_CENTER_DIAMETER <= 0:
-            raise ValueError(f"FIXATION_CENTER_DIAMETER must be positive, got: {self.FIXATION_CENTER_DIAMETER}")
-        if self.FIXATION_OUTER_DIAMETER <= 0:
-            raise ValueError(f"FIXATION_OUTER_DIAMETER must be positive, got: {self.FIXATION_OUTER_DIAMETER}")
-        if self.FIXATION_CROSS_WIDTH <= 0:
-            raise ValueError(f"FIXATION_CROSS_WIDTH must be positive, got: {self.FIXATION_CROSS_WIDTH}")
-
-        # Validate circle target dimensions (must be positive)
-        if self.CIRCLE_OUTER_RADIUS <= 0:
-            raise ValueError(f"CIRCLE_OUTER_RADIUS must be positive, got: {self.CIRCLE_OUTER_RADIUS}")
-        if self.CIRCLE_INNER_RADIUS <= 0:
-            raise ValueError(f"CIRCLE_INNER_RADIUS must be positive, got: {self.CIRCLE_INNER_RADIUS}")
-        if self.CIRCLE_INNER_RADIUS >= self.CIRCLE_OUTER_RADIUS:
-            raise ValueError(
-                f"CIRCLE_INNER_RADIUS ({self.CIRCLE_INNER_RADIUS}) must be less than "
-                f"CIRCLE_OUTER_RADIUS ({self.CIRCLE_OUTER_RADIUS})"
-            )
-
-        # Camera lens focal length validation (optional)
-        if self.CAMERA_LENS_FOCAL_LENGTH is not None and self.CAMERA_LENS_FOCAL_LENGTH <= 0:
-            raise ValueError(
-                f"CAMERA_LENS_FOCAL_LENGTH must be positive or None, got: {self.CAMERA_LENS_FOCAL_LENGTH}"
-            )
-
-        # Backend validation
-        valid_backends = {"pygame", "psychopy", "pyglet"}
-        if self.BACKEND not in valid_backends:
-            raise ValueError(f"Invalid BACKEND: {self.BACKEND}. Must be one of: {', '.join(sorted(valid_backends))}")
-
-        # Display index validation (must be non-negative integer)
-        if not isinstance(self.DISPLAY_INDEX, int) or self.DISPLAY_INDEX < 0:
-            raise ValueError(f"DISPLAY_INDEX must be a non-negative integer, got: {self.DISPLAY_INDEX}")
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert settings to a dictionary.
-
-        Returns:
-            Dictionary containing all settings values
-
-        """
-        return asdict(self)
-
-    def save_to_file(self, filepath: str | Path) -> None:
-        """Save settings to a JSON file.
-
-        Args:
-            filepath: Path to save the configuration file
-
-        Example:
-            >>> settings = Settings(SAMPLE_RATE=500, SCREEN_RES=[1920, 1080])
-            >>> settings.save_to_file("my_config.json")
-
-        """
-        filepath = Path(filepath)
-        config_dict = self.to_dict()
-
-        # Ensure parent directory exists
-        filepath.parent.mkdir(parents=True, exist_ok=True)
-
-        with filepath.open("w") as f:
-            json.dump(config_dict, f, indent=2)
-
-        logger.info("Settings saved to %s", filepath)
-
-    @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]) -> Self:
-        """Create Settings instance from a dictionary.
-
-        Args:
-            config_dict: Dictionary containing settings values
-
-        Returns:
-            New Settings instance with values from the dictionary
-
-        """
-        # Convert list color values back to tuples (JSON doesn't preserve tuples)
-        # RGBA fields (fixation targets) - convert RGB to RGBA by adding alpha=255
-        rgba_fields = [
-            "FIXATION_CENTER_COLOR",
-            "FIXATION_OUTER_COLOR",
-            "FIXATION_CROSS_COLOR",
-        ]
-        # RGB fields (circle targets, calibration background, calibration text) - keep as RGB
-        rgb_fields = [
-            "CIRCLE_OUTER_COLOR",
-            "CIRCLE_INNER_COLOR",
-            "CAL_BACKGROUND_COLOR",
-            "CALIBRATION_TEXT_COLOR",
-        ]
-
-        processed_dict = config_dict.copy()
-
-        # Convert RGBA fields (accept 3-tuple and add alpha, or keep 4-tuple)
-        for field_name in rgba_fields:
-            if field_name in processed_dict and isinstance(processed_dict[field_name], list):
-                if len(processed_dict[field_name]) == 3:
-                    processed_dict[field_name] = (*tuple(processed_dict[field_name]), 255)
-                else:
-                    processed_dict[field_name] = tuple(processed_dict[field_name])
-
-        # Convert RGB fields (must be 3-tuple)
-        for field_name in rgb_fields:
-            if field_name in processed_dict and isinstance(processed_dict[field_name], list):
-                processed_dict[field_name] = tuple(processed_dict[field_name])
-
-        return cls(**processed_dict)
-
-    @classmethod
-    def load_from_file(cls, filepath: str | Path) -> Self:
-        """Load settings from a JSON file.
-
-        Args:
-            filepath: Path to the configuration file
-
-        Returns:
-            New Settings instance with values from the file
-
-        Raises:
-            FileNotFoundError: If the configuration file doesn't exist
-            ValueError: If the file contains invalid configuration values
-
-        Example:
-            >>> settings = Settings.load_from_file("my_config.json")
-
-        """
-        filepath = Path(filepath)
-
-        if not filepath.exists():
-            raise FileNotFoundError(f"Configuration file not found: {filepath}")
-
-        with filepath.open("r") as f:
-            config_dict = json.load(f)
-
-        logger.info("Settings loaded from %s", filepath)
-        return cls.from_dict(config_dict)
 
 
 class _MinimalAlertHandler(pylink.EyeLinkCustomDisplay):
@@ -547,7 +149,7 @@ class EyeLink:  # noqa: PLR0904
         # Hardware connection state
         self.tracker: pylink.EyeLink | None = None
         self.realconnect = False
-        self.edfname = settings.FILENAME + ".edf"
+        self.edfname = settings.filename + ".edf"
         self._alert_handler: object | None = None
 
         # Store initialization parameters for deferred setup
@@ -567,7 +169,7 @@ class EyeLink:  # noqa: PLR0904
         self.display = None
 
         # Store data save path for Ctrl+C cleanup
-        self._data_save_path = settings.FILEPATH or "./"
+        self._data_save_path = settings.filepath
 
         # Connect immediately if auto_connect is True
         if auto_connect:
@@ -646,13 +248,13 @@ class EyeLink:  # noqa: PLR0904
         logger.info("Connecting to EyeLink...")
 
         # Dummy mode if explicitly requested
-        if self.settings.HOST_IP is None or str(self.settings.HOST_IP).lower() == "dummy":
-            logger.info("Using EyeLink in dummy mode (settings.HOST_IP is None or 'dummy')")
+        if self.settings.host_ip is None or str(self.settings.host_ip).lower() == "dummy":
+            logger.info("Using EyeLink in dummy mode (settings.host_ip is None or 'dummy')")
             self.tracker = pylink.EyeLink(None)
             self.realconnect = False
         else:
             try:
-                self.tracker = pylink.EyeLink(trackeraddress=self.settings.HOST_IP)
+                self.tracker = pylink.EyeLink(trackeraddress=self.settings.host_ip)
                 # Check if connection actually succeeded
                 if self.tracker is not None:
                     try:
@@ -664,11 +266,11 @@ class EyeLink:  # noqa: PLR0904
             except RuntimeError:
                 # User-facing troubleshooting messages - not exception logging
                 logger.error("ERROR: Could not connect to EyeLink tracker!")  # noqa: TRY400
-                logger.error("Current Host PC IP setting: %s", self.settings.HOST_IP)  # noqa: TRY400
+                logger.error("Current Host PC IP setting: %s", self.settings.host_ip)  # noqa: TRY400
                 logger.error("Please check:")  # noqa: TRY400
                 logger.error("  1. EyeLink Host PC is powered on")  # noqa: TRY400
                 logger.error("  2. Ethernet cable is connected")  # noqa: TRY400
-                logger.error("  3. Host PC IP address matches settings.HOST_IP")  # noqa: TRY400
+                logger.error("  3. Host PC IP address matches settings.host_ip")  # noqa: TRY400
                 logger.error("  4. Your computer's IP is on the same subnet (e.g., 100.1.1.2)")  # noqa: TRY400
                 logger.error("Cleaning up and exiting...")  # noqa: TRY400
                 _cleanup_on_exit()
@@ -681,9 +283,9 @@ class EyeLink:  # noqa: PLR0904
 
             if self.tracker is not None and is_connected:
                 self.realconnect = True
-                logger.info("Successfully connected to EyeLink at %s", self.settings.HOST_IP)
+                logger.info("Successfully connected to EyeLink at %s", self.settings.host_ip)
             else:
-                logger.error("Failed to connect to EyeLink at %s (unknown error)", self.settings.HOST_IP)
+                logger.error("Failed to connect to EyeLink at %s (unknown error)", self.settings.host_ip)
                 _cleanup_on_exit()
                 sys.exit(1)
 
@@ -716,7 +318,7 @@ class EyeLink:  # noqa: PLR0904
         self.events = EventProcessor(self, buffer_length=self._event_buffer_length)
 
         # Which eye should be tracked?
-        self._select_eye(eye_tracked=self.settings.EYE_TRACKED)
+        self._select_eye(eye_tracked=self.settings.eye_tracked)
 
         # Override default settings
         self._set_all_constants()
@@ -726,9 +328,9 @@ class EyeLink:  # noqa: PLR0904
 
         # Create display window (works in both real and dummy mode)
         mode_str = "dummy mode" if not self.realconnect else "real tracker"
-        logger.info("Creating %s display window (%s)...", self.settings.BACKEND, mode_str)
-        self.display = self._create_display(self.settings.BACKEND)
-        logger.info("Display window created on monitor %d", self.settings.DISPLAY_INDEX)
+        logger.info("Creating %s display window (%s)...", self.settings.backend, mode_str)
+        self.display = self._create_display(self.settings.backend)
+        logger.info("Display window created on monitor %d", self.settings.display_index)
 
         self._connected = True
         logger.info("EyeLink connected and configured")
@@ -772,12 +374,12 @@ class EyeLink:  # noqa: PLR0904
         exc_tb: types.TracebackType | None,
     ) -> None:
         """Ensure tracker is cleaned up on context exit."""
-        self.end_experiment(self.settings.FILEPATH or "./")
+        self.end_experiment(self.settings.filepath)
 
     def __del__(self) -> None:
         """Ensure tracker is cleaned up on deletion (safety net)."""
         with contextlib.suppress(Exception):
-            self.end_experiment(self.settings.FILEPATH or "./")
+            self.end_experiment(self.settings.filepath)
 
     def _create_display(self, backend_name: str) -> object:
         """Create display window based on backend name.
@@ -1189,7 +791,7 @@ class EyeLink:  # noqa: PLR0904
     def calibrate(self, record_samples: bool = False, mode: str = "normal") -> None:
         """Calibrate eye-tracker using internal display window.
 
-        Creates calibration display automatically based on settings.BACKEND
+        Creates calibration display automatically based on settings.backend
         and uses the tracker's internal window (tracker.display.window).
 
         Args:
@@ -1216,15 +818,15 @@ class EyeLink:  # noqa: PLR0904
 
         if self.realconnect:
             # Set calibration type
-            calst = f"HV{self.settings.N_CAL_TARGETS}"
+            calst = f"HV{self.settings.n_cal_targets}"
             self.set_calibration_type(calst)
 
             # Enable/disable automatic calibration sequencing
-            auto_cal_value = "YES" if self.settings.ENABLE_AUTOMATIC_CALIBRATION else "NO"
+            auto_cal_value = "YES" if self.settings.enable_automatic_calibration else "NO"
             self.send_command(f"enable_automatic_calibration = {auto_cal_value}")
 
             # Set calibration pacing (only relevant if automatic calibration is enabled)
-            self.set_auto_calibration_pacing(self.settings.PACING_INTERVAL)
+            self.set_auto_calibration_pacing(self.settings.pacing_interval)
 
             # Close any existing graphics to allow color/settings changes between calibrations
             with contextlib.suppress(Exception):
@@ -1241,7 +843,7 @@ class EyeLink:  # noqa: PLR0904
                     self.send_command("sticky_mode_data_enable DATA = 1 1 0 0")
 
             # Calibrate
-            self.do_tracker_setup(self.settings.SCREEN_RES[0], self.settings.SCREEN_RES[1])
+            self.do_tracker_setup(self.settings.screen_res[0], self.settings.screen_res[1])
 
             # Stop sending samples
             if record_samples:
@@ -1303,8 +905,8 @@ class EyeLink:  # noqa: PLR0904
 
         self._ensure_connected()
 
-        if self.settings.SET_HEURISTIC_FILTER:
-            cstr = f"heuristic_filter {self.settings.HEURISTIC_FILTER[0]} {self.settings.HEURISTIC_FILTER[1]}"
+        if self.settings.set_heuristic_filter:
+            cstr = f"heuristic_filter {self.settings.heuristic_filter[0]} {self.settings.heuristic_filter[1]}"
             self.send_command(cstr)
 
         self.send_command("set_idle_mode")
@@ -1507,10 +1109,10 @@ class EyeLink:  # noqa: PLR0904
             SCREEN_WIDTH and SCREEN_HEIGHT are already in mm
 
         """
-        left = -self.settings.SCREEN_WIDTH / 2.0
-        top = self.settings.SCREEN_HEIGHT / 2.0
-        right = self.settings.SCREEN_WIDTH / 2.0
-        bottom = -self.settings.SCREEN_HEIGHT / 2.0
+        left = -self.settings.screen_width / 2.0
+        top = self.settings.screen_height / 2.0
+        right = self.settings.screen_width / 2.0
+        bottom = -self.settings.screen_height / 2.0
         separator = " = " if use_equals else " "
         return f"screen_phys_coords{separator}{left} {top} {right} {bottom}"
 
@@ -1532,10 +1134,10 @@ class EyeLink:  # noqa: PLR0904
 
         Values are imported from Settings object.
         """
-        sres = self.settings.SCREEN_RES
+        sres = self.settings.screen_res
 
         # Set illumination power
-        self.send_command("elcl_tt_power " + str(self.settings.ILLUMINATION_POWER))
+        self.send_command("elcl_tt_power " + str(self.settings.illumination_power))
 
         # Set display coords for dataviewer
         disptxt = f"DISPLAY_COORDS 0 0 {sres[0] - 1} {sres[1] - 1}"
@@ -1553,52 +1155,52 @@ class EyeLink:  # noqa: PLR0904
         #   <mm to center>: distance from display center to subject in millimetres.
         #   <mm to top>: distance from display top to subject in millimetres.
         #   <mm to bottom>: distance from display bottom to subject in millimetres.
-        if self.settings.SCREEN_DISTANCE_TOP_BOTTOM is not None:
-            scrtxt = f"screen_distance = {self.settings.SCREEN_DISTANCE_TOP_BOTTOM[0]} {self.settings.SCREEN_DISTANCE_TOP_BOTTOM[1]}"
+        if self.settings.screen_distance_top_bottom is not None:
+            scrtxt = f"screen_distance = {self.settings.screen_distance_top_bottom[0]} {self.settings.screen_distance_top_bottom[1]}"
             self.send_command(scrtxt)
         else:
-            self.send_command(f"screen_distance = {self.settings.SCREEN_DISTANCE}")
+            self.send_command(f"screen_distance = {self.settings.screen_distance}")
         # Set remote mode lens if provided
-        if self.settings.CAMERA_LENS_FOCAL_LENGTH is not None:
-            self.send_command(f"camera_lens_focal_length = {self.settings.CAMERA_LENS_FOCAL_LENGTH}")
-        if self.settings.CAMERA_TO_SCREEN_DISTANCE is not None:
+        if self.settings.camera_lens_focal_length is not None:
+            self.send_command(f"camera_lens_focal_length = {self.settings.camera_lens_focal_length}")
+        if self.settings.camera_to_screen_distance is not None:
             # remote_camera_position <rh> <rv> <dx> <dy> <dz>
             #   <rh>:  rotation of camera from screen (clockwise from top)
             #          i.e. how much the right edge of the camera is closer than left edge of camera
             #          10 assumes right edge is closer than left edge
             #   <rv>: tilt of camera from screen (top toward screen)
             #   <dx>: bottom-center of display in cam coords
-            self.send_command(f"remote_camera_position = -10 17 80 60 -{self.settings.CAMERA_TO_SCREEN_DISTANCE}")
+            self.send_command(f"remote_camera_position = -10 17 80 60 -{self.settings.camera_to_screen_distance}")
 
         # Set content of edf file
-        self.send_command("file_event_filter = " + self.settings.FILE_EVENT_FILTER)
-        self.send_command("link_event_filter = " + self.settings.LINK_EVENT_FILTER)
-        self.send_command("link_sample_data = " + self.settings.LINK_SAMPLE_DATA)
-        self.send_command("file_sample_data = " + self.settings.FILE_SAMPLE_DATA)
+        self.send_command("file_event_filter = " + self.settings.file_event_filter)
+        self.send_command("link_event_filter = " + self.settings.link_event_filter)
+        self.send_command("link_sample_data = " + self.settings.link_sample_data)
+        self.send_command("file_sample_data = " + self.settings.file_sample_data)
 
         self.send_command(self._build_screen_phys_coords_command(use_equals=True))
-        self.send_command(f"sample_rate = {self.settings.SAMPLE_RATE}")
-        self.send_command(f"pupil_size_diameter = {self.settings.PUPIL_SIZE_MODE}")
+        self.send_command(f"sample_rate = {self.settings.sample_rate}")
+        self.send_command(f"pupil_size_diameter = {self.settings.pupil_size_mode}")
 
-        self.send_command(" ".join(["calibration_corner_scaling", "=", str(self.settings.CALIBRATION_CORNER_SCALING)]))
-        self.send_command(" ".join(["validation_corner_scaling", "=", str(self.settings.VALIDATION_CORNER_SCALING)]))
+        self.send_command(" ".join(["calibration_corner_scaling", "=", str(self.settings.calibration_corner_scaling)]))
+        self.send_command(" ".join(["validation_corner_scaling", "=", str(self.settings.validation_corner_scaling)]))
         self.send_command(
             " ".join([
                 "calibration_area_proportion",
                 "=",
-                " ".join([str(i) for i in self.settings.CALIBRATION_AREA_PROPORTION]),
+                " ".join([str(i) for i in self.settings.calibration_area_proportion]),
             ])
         )
         self.send_command(
             " ".join([
                 "validation_area_proportion",
                 "=",
-                " ".join([str(i) for i in self.settings.VALIDATION_AREA_PROPORTION]),
+                " ".join([str(i) for i in self.settings.validation_area_proportion]),
             ])
         )
-        self.send_command(f"heuristic_filter {self.settings.HEURISTIC_FILTER[0]} {self.settings.HEURISTIC_FILTER[1]}")
+        self.send_command(f"heuristic_filter {self.settings.heuristic_filter[0]} {self.settings.heuristic_filter[1]}")
 
-        if "CENTROID" in self.settings.PUPIL_TRACKING_MODE:
+        if "CENTROID" in self.settings.pupil_tracking_mode:
             self.send_command("use_ellipse_fitter = NO")
         else:
             self.send_command("use_ellipse_fitter = YES")
@@ -1645,7 +1247,7 @@ class EyeLink:  # noqa: PLR0904
 
         """
         # Figure out center
-        x = self.settings.SCREEN_RES[0] / 2
+        x = self.settings.screen_res[0] / 2
 
         # Send message
         txt = f'"{msg}"'
@@ -1664,7 +1266,7 @@ class EyeLink:  # noqa: PLR0904
             self.send_command("link_sample_raw_pcr = 1")  # only over link
 
             # Enable dual corneal tracking only if requested (can add noise during calibration)
-            if self.settings.ENABLE_DUAL_CORNEAL_TRACKING:
+            if self.settings.enable_dual_corneal_tracking:
                 self.send_command("raw_pcr_dual_corneal = 1")  # Enable tracking of two CR (corneal reflections)
             else:
                 self.send_command("raw_pcr_dual_corneal = 0")  # Track only primary CR

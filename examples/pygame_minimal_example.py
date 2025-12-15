@@ -10,11 +10,11 @@ import pyelink as el
 
 # Configure tracker - tracker creates and owns the window
 settings = el.Settings(
-    BACKEND="pygame",
-    FULLSCREEN=True,
-    DISPLAY_INDEX=0,  # Primary monitor
-    FILENAME="pygame",
-    # HOST_IP="dummy",  # Use dummy mode for testing without EyeLink
+    backend="pygame",
+    fullscreen=True,
+    display_index=0,  # Primary monitor
+    filename="pygame",
+    # host_ip="dummy",  # Use dummy mode for testing without EyeLink
 )
 
 print("Connecting to EyeLink and creating window...")

@@ -38,11 +38,11 @@ class PsychopyDisplay(BaseDisplay):
         display = pyglet.canvas.get_display()
         screens = display.get_screens()
 
-        screen_index = 0 if len(screens) <= settings.DISPLAY_INDEX else settings.DISPLAY_INDEX
+        screen_index = 0 if len(screens) <= settings.display_index else settings.display_index
 
         window = visual.Window(
-            size=settings.SCREEN_RES,
-            fullscr=settings.FULLSCREEN,
+            size=settings.screen_res,
+            fullscr=settings.fullscreen,
             screen=screen_index,
             units="pix",
             color=[0, 0, 0],

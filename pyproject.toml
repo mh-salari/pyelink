@@ -30,6 +30,7 @@ dependencies = [
     "numpy>=1.20.0,<2.3.0", # psychopy requires numpy < 2.3.0
     "fixation-target>=1.4.2", # For generating calibration targets
     "pyaudio>=0.2.14",
+    "pydantic>=2.0,<3.0", # Settings validation and runtime type checking
 ]
 
 [project.optional-dependencies]
