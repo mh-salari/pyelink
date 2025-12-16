@@ -72,6 +72,11 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
 
     def setup_cal_display(self) -> None:
         """Initialize calibration display with instructions."""
+        # Use custom callback if provided
+        if self.settings.calibration_instruction_page_callback:
+            self.settings.calibration_instruction_page_callback(self.window)
+            return
+
         # Draw instruction text centered on screen (if not empty)
         if self.settings.calibration_instruction_text:
             instr_stim = visual.TextStim(
@@ -80,8 +85,8 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
                 pos=(0, 0),
                 color=tuple(self.txtcol),
                 units="pix",
-                height=18,
-                font="Arial",
+                height=self.settings.calibration_text_font_size,
+                font=self.settings.calibration_text_font_name,
             )
             instr_stim.draw()
 

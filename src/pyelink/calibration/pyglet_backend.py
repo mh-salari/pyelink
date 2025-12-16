@@ -79,14 +79,19 @@ class PygletCalibrationDisplay(CalibrationDisplay):
 
     def setup_cal_display(self) -> None:
         """Initialize calibration display with instructions."""
+        # Use custom callback if provided
+        if self.settings.calibration_instruction_page_callback:
+            self.settings.calibration_instruction_page_callback(self.window)
+            return
+
         self._clear_window()
 
         # Draw instruction text centered on screen (if not empty)
         if self.settings.calibration_instruction_text:
             instructions = pyglet.text.Label(
                 self.settings.calibration_instruction_text,
-                font_name="Arial",
-                font_size=16,
+                font_name=self.settings.calibration_text_font_name,
+                font_size=self.settings.calibration_text_font_size,
                 x=self.width // 2,
                 y=self.height // 2,
                 anchor_x="center",

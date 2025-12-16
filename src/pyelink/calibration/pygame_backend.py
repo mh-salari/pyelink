@@ -66,11 +66,20 @@ class PygameCalibrationDisplay(CalibrationDisplay):
 
     def setup_cal_display(self) -> None:
         """Initialize calibration display with instructions."""
+        # Use custom callback if provided
+        if self.settings.calibration_instruction_page_callback:
+            self.settings.calibration_instruction_page_callback(self.window)
+            return
+
         self.window.fill(self.backcolor)
 
         # Draw instruction text centered on screen (if not empty)
         if self.settings.calibration_instruction_text:
-            instr_surface = self.small_font.render(self.settings.calibration_instruction_text, True, self.forecolor)
+            font = pygame.font.SysFont(
+                self.settings.calibration_text_font_name,
+                self.settings.calibration_text_font_size,
+            )
+            instr_surface = font.render(self.settings.calibration_instruction_text, True, self.forecolor)
             instr_rect = instr_surface.get_rect(center=(self.width // 2, self.height // 2))
             self.window.blit(instr_surface, instr_rect)
 

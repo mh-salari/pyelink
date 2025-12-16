@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
@@ -288,6 +288,61 @@ class Settings(BaseModel):
         Should contrast well with cal_background_color.
 
         Reference: DEFAULTS.INI line 53
+        """,
+    )
+
+    calibration_text_font_size: int = Field(
+        default=18,
+        gt=0,
+        description="""Font size for calibration instruction text.
+
+        Controls the size of the instruction text shown on the setup screen
+        before calibration begins.
+
+        Default: 18
+        """,
+    )
+
+    calibration_text_font_name: str = Field(
+        default="Arial",
+        min_length=1,
+        description="""Font name for calibration instruction text.
+
+        System font name to use for instruction text on the setup screen.
+
+        Default: "Arial"
+        """,
+    )
+
+    calibration_instruction_page_callback: Callable[[object], None] | None = Field(
+        default=None,
+        exclude=True,
+        description="""Custom callback to replace default calibration instruction page.
+
+        If provided, this function replaces the default instruction screen shown
+        before calibration begins. Receives the backend-specific window object.
+
+        Signature: callback(window) -> None
+
+        Window types by backend:
+        - pygame: pygame.Surface
+        - psychopy: psychopy.visual.Window
+        - pyglet: pyglet.window.Window
+
+        Note: User must call appropriate flip/display update at the end.
+
+        Example (pygame):
+            def custom_instruction_page(window):
+                window.fill((0, 0, 128))  # Dark blue
+                font = pygame.font.SysFont("Arial", 24)
+                text = font.render("Press C to begin", True, (255, 255, 255))
+                window.blit(text, (100, 100))
+                pygame.display.flip()
+
+            settings = Settings(
+                backend='pygame',
+                calibration_instruction_page_callback=custom_instruction_page
+            )
         """,
     )
 
