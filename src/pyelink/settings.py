@@ -6,10 +6,11 @@ Settings use Pydantic for runtime validation and rich IDE support via comprehens
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 
 class Settings(BaseModel):
@@ -32,15 +33,15 @@ class Settings(BaseModel):
     filename: str = Field(
         default="test",
         min_length=1,
-        max_length=8,
-        pattern=r"^[a-zA-Z0-9_]+$",
         description="""EDF filename without .edf extension.
 
-        Maximum 8 characters, alphanumeric and underscore only (DOS 8.3 format).
-        This limitation comes from the EyeLink Host PC filesystem.
+        Length restrictions depend on enable_long_filenames setting:
+        - When False: Maximum 8 characters (DOS 8.3 format)
+        - When True: Maximum 64 characters
 
-        Example: "test", "exp01", "pilot_a"
-        Invalid: "test.edf", "my-file", "verylongname"
+        Only alphanumeric characters and underscores are allowed.
+
+        Example: "test", "exp01", "participant_01_session_2"
         """,
     )
 
@@ -52,6 +53,29 @@ class Settings(BaseModel):
         Path is created if it doesn't exist.
 
         Example: "./data/", "./experiment_data/session1/"
+        """,
+    )
+
+    enable_long_filenames: bool = Field(
+        default=True,
+        description="""Enable long filename support on EyeLink Host PC.
+
+        When True, sends 'long_filename_enabled = YES' command to Host PC,
+        allowing filenames up to 64 characters with more flexible character rules.
+        When False, enforces legacy 8-character DOS 8.3 format.
+
+        Falls back to 8-character mode if Host PC doesn't support long filenames.
+        """,
+    )
+
+    max_filename_length: int = Field(
+        default=64,
+        ge=8,
+        le=255,
+        description="""Maximum filename length when long filenames are enabled.
+
+        Default: 64 characters (conservative limit for most EyeLink systems)
+        Only applies when enable_long_filenames=True.
         """,
     )
 
@@ -909,6 +933,43 @@ class Settings(BaseModel):
         if v is not None and (v[0] <= 0 or v[1] <= 0):
             raise ValueError(f"Screen distances must be positive, got {v}. Values should be in millimeters.")
         return v
+
+    @model_validator(mode="after")
+    def validate_file_settings(self) -> Settings:
+        """Validate file-related settings after all fields are set."""
+        # Validate filename based on enable_long_filenames setting
+        filename = self.filename
+        enable_long = self.enable_long_filenames
+        max_length = self.max_filename_length
+
+        # Determine validation rules - only length changes, character rules stay the same
+        pattern = r"^[a-zA-Z0-9_]+$"
+        limit = max_length if enable_long else 8
+        mode_desc = f"{limit} characters" if enable_long else "8-character limit (DOS 8.3 format)"
+
+        # Validate length
+        if len(filename) > limit:
+            suggestion = (
+                "Either shorten the name or adjust max_filename_length setting."
+                if enable_long
+                else "Either shorten the name or set enable_long_filenames=True."
+            )
+            raise ValueError(f"Filename '{filename}' exceeds maximum length of {mode_desc}. {suggestion}")
+
+        # Validate characters
+        if not re.match(pattern, filename):
+            raise ValueError(
+                f"Filename '{filename}' contains invalid characters. "
+                f"Only alphanumeric characters and underscores are allowed."
+            )
+
+        # Validate no path separators
+        if "/" in filename or "\\" in filename:
+            raise ValueError(
+                f"Filename '{filename}' cannot contain path separators. Use filepath setting for directory path."
+            )
+
+        return self
 
     # =========================================================================
     # SERIALIZATION METHODS

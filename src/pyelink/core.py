@@ -176,27 +176,11 @@ class EyeLink:  # noqa: PLR0904
             self.connect()
 
         # Register end_experiment with atexit for automatic cleanup
-        atexit.register(lambda: self.end_experiment(self._data_save_path))
+        atexit.register(self.end_experiment)
 
         # Set up Ctrl+C signal handler for graceful shutdown
         # This handles both terminal focus (SIGINT) and window focus (called by display backends)
         signal.signal(signal.SIGINT, self._signal_handler)
-
-    def set_data_save_path(self, path: str) -> None:
-        """Update the path where EDF file will be saved on cleanup.
-
-        This path is used when Ctrl+C is pressed or when end_experiment() is called
-        without a path argument.
-
-        Args:
-            path: Directory path where EDF file should be saved (include trailing slash)
-
-        Example:
-            tracker.set_data_save_path("./data/session1/")
-
-        """
-        self._data_save_path = path
-        logger.info("Data save path updated to: %s", path)
 
     def _signal_handler(self, signum: int, frame: object) -> None:  # noqa: ARG002
         """Handle Ctrl+C for graceful shutdown.
@@ -219,7 +203,7 @@ class EyeLink:  # noqa: PLR0904
 
         """
         logger.critical("Ctrl+C detected - shutting down gracefully...")
-        self.end_experiment(self._data_save_path)
+        self.end_experiment()
         logger.critical("Cleanup complete. Exiting.")
         os._exit(0)
 
@@ -302,6 +286,10 @@ class EyeLink:  # noqa: PLR0904
         pylink.flushGetkeyQueue()
         self.tracker.setOfflineMode()
 
+        # Enable long filenames on Host PC if requested
+        if self.settings.enable_long_filenames and self.realconnect:
+            self._enable_long_filenames()
+
         # Open EDF data file
         self._open_data_file()
 
@@ -374,12 +362,12 @@ class EyeLink:  # noqa: PLR0904
         exc_tb: types.TracebackType | None,
     ) -> None:
         """Ensure tracker is cleaned up on context exit."""
-        self.end_experiment(self.settings.filepath)
+        self.end_experiment()
 
     def __del__(self) -> None:
         """Ensure tracker is cleaned up on deletion (safety net)."""
         with contextlib.suppress(Exception):
-            self.end_experiment(self.settings.filepath)
+            self.end_experiment()
 
     def _create_display(self, backend_name: str) -> object:
         """Create display window based on backend name.
@@ -923,7 +911,7 @@ class EyeLink:  # noqa: PLR0904
         self._is_recording = True
         logger.info("Recording started")
 
-    def end_experiment(self, spath: str | None = None) -> None:
+    def end_experiment(self) -> None:
         """Comprehensive cleanup: stop recording, save EDF, and disconnect.
 
         This is the single cleanup method that ensures all resources are properly
@@ -932,17 +920,12 @@ class EyeLink:  # noqa: PLR0904
 
         Works at any point during the experiment, including during calibration.
 
+        The EDF file is saved to the directory specified in settings.filepath.
+
         WARNING: Don't retrieve a file using PsychoPy. Start exp program from cmd
         otherwise file transfer can be very slow.
 
-        Args:
-            spath: File path of where to save EDF file (include trailing slash).
-                   If None, uses the path stored during initialization.
-
         """
-        # Use stored path if not provided
-        if spath is None:
-            spath = self._data_save_path
         # Prevent duplicate cleanup
         if self._cleaned_up:
             return
@@ -974,7 +957,7 @@ class EyeLink:  # noqa: PLR0904
 
         # Transfer EDF file (most important - always try to save data)
         with contextlib.suppress(Exception):
-            self._transfer_data_file(spath)
+            self._transfer_data_file(self._data_save_path)
 
         # Disconnect from tracker
         with contextlib.suppress(Exception):
@@ -987,21 +970,32 @@ class EyeLink:  # noqa: PLR0904
 
     # Recording management methods (from recorder.py)
 
+    def _enable_long_filenames(self) -> None:
+        """Enable long filename support on EyeLink Host PC.
+
+        Sends 'long_filename_enabled = YES' command to Host PC.
+        Falls back to 8-character validation if command fails.
+
+        """
+        try:
+            self.tracker.sendCommand("long_filename_enabled = YES")
+            logger.info("Long filenames enabled on Host PC (up to %d characters)", self.settings.max_filename_length)
+        except Exception as e:
+            logger.warning("Could not enable long filenames on Host PC: %s", e)
+            logger.warning("Falling back to 8-character limit")
+
+            # Validate filename with 8-character limit
+            if len(self.settings.filename) > 8:
+                logger.error(  # noqa: TRY400
+                    "Filename '%s' exceeds 8-character limit and long filenames could not be enabled",
+                    self.settings.filename,
+                )
+                sys.exit(1)
+
     def _open_data_file(self) -> None:
         """Open EDF data file on the tracker."""
         self._ensure_connected()
-        try:
-            self.tracker.openDataFile(self.edfname)
-        except RuntimeError as e:
-            msg = str(e)
-            if "Unexpected end of line" in msg or "openDataFile" in msg:
-                logger.error("Could not open EDF file %s. Likely invalid filename.", self.edfname)  # noqa: TRY400
-                logger.error(  # noqa: TRY400
-                    "EyeLink EDF filenames must be ≤8 characters, alphanumeric or underscore, and not contain spaces or special characters."
-                )
-                sys.exit(1)
-            else:
-                raise
+        self.tracker.openDataFile(self.edfname)
         logger.info("Data file opened: %s", self.edfname)
 
     def is_recording(self) -> bool:
@@ -1019,14 +1013,70 @@ class EyeLink:  # noqa: PLR0904
         self.tracker.closeDataFile()
         logger.info("Data file closed")
 
+    @staticmethod
+    def _prompt_file_exists(fpath: Path) -> str:
+        """Prompt user what to do when file exists.
+
+        Args:
+            fpath: File path that exists
+
+        Returns:
+            'replace', 'rename', or 'cancel'
+
+        """
+        print(f"\nFile already exists: {fpath}")
+        print("Options:")
+        print("  1. Replace - Overwrite existing file")
+        print("  2. Rename - Save with different name")
+        print("  3. Cancel - Skip file transfer")
+
+        while True:
+            choice = input("Enter choice (1/2/3): ").strip()
+            if choice == "1":
+                return "replace"
+            if choice == "2":
+                return "rename"
+            if choice == "3":
+                return "cancel"
+            print("Invalid choice. Please enter 1, 2, or 3.")
+
+    @staticmethod
+    def _get_renamed_path(original_path: Path) -> Path:
+        """Get a new filename from user that doesn't exist.
+
+        Args:
+            original_path: Original file path
+
+        Returns:
+            New file path that doesn't exist
+
+        """
+        suffix = original_path.suffix
+        parent = original_path.parent
+
+        while True:
+            new_name = input(f"Enter new filename (without {suffix}): ").strip()
+            if not new_name:
+                print("Filename cannot be empty.")
+                continue
+
+            new_path = parent / (new_name + suffix)
+            if new_path.exists():
+                print(f"File {new_path} already exists. Try another name.")
+                continue
+
+            return new_path
+
     def _transfer_data_file(self, save_path: str) -> None:
         """Transfer EDF file from tracker to display computer.
+
+        If file already exists, prompts user to replace, rename, or cancel.
 
         WARNING: Don't retrieve a file using PsychoPy. Start exp program from cmd
         otherwise file transfer can be very slow.
 
         Args:
-            save_path: Directory path where the EDF file will be saved (include trailing slash)
+            save_path: Directory path where the EDF file will be saved
 
         """
         self._ensure_connected()
@@ -1035,8 +1085,18 @@ class EyeLink:  # noqa: PLR0904
         save_dir = Path(save_path).resolve()
         save_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate full file path using Path for proper handling
-        fpath = str(save_dir / self.edfname)
+        # Generate full file path
+        local_fpath = save_dir / self.edfname
+
+        # If file exists, always prompt user
+        if local_fpath.exists():
+            response = self._prompt_file_exists(local_fpath)
+            if response == "rename":
+                local_fpath = self._get_renamed_path(local_fpath)
+            elif response == "cancel":
+                logger.info("File transfer cancelled by user")
+                return
+            # 'replace' falls through to overwrite
 
         # Set tracker to offline mode
         self.set_offline_mode()
@@ -1046,14 +1106,15 @@ class EyeLink:  # noqa: PLR0904
         self._close_data_file()
         time.sleep(1)
 
-        # Transfer file - receiveDataFile returns file size or raises exception
-        logger.info("Receiving data file: %s -> %s", self.edfname, fpath)
-        file_size = self.tracker.receiveDataFile(self.edfname, fpath)
+        # Transfer file
+        logger.info("Receiving data file from Host PC: %s", self.edfname)
+        logger.info("Saving locally to: %s", local_fpath)
+        file_size = self.tracker.receiveDataFile(self.edfname, str(local_fpath))
 
-        # Only log success if file was actually transferred
+        # Log result
         if file_size > 0:
             logger.info("Data file transfer complete (%d bytes)", file_size)
-            logger.info("EDF file transferred to: %s", fpath)
+            logger.info("EDF file saved to: %s", local_fpath)
         else:
             logger.warning("No data file to transfer (file size: 0)")
 

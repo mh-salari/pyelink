@@ -11,17 +11,16 @@ import pyelink as el
 # Configure tracker - tracker creates and owns the window
 settings = el.Settings(
     backend="psychopy",
-    fullscreen=True,
+    fullscreen=False,
     display_index=0,  # Primary monitor
     filename="psychopy",
+    filepath="./examples/data/",  # Directory where EDF file will be saved
+    enable_long_filenames=True,  # Default - allows up to 64 character filenames
     # host_ip="dummy",  # Use dummy mode for testing without EyeLink
 )
 
 print("Connecting to EyeLink and creating window...")
 tracker = el.EyeLink(settings, record_raw_data=True)
-
-# Set data save path (used for Ctrl+C cleanup and end_experiment)
-tracker.set_data_save_path("./examples/data/")
 
 # Calibrate (window created automatically by tracker)
 print("Starting calibration...")
