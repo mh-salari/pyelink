@@ -15,7 +15,7 @@ import signal
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 import pylink
 
@@ -361,7 +361,7 @@ class EyeLink:  # noqa: PLR0904
         """
         return self.tracker is not None and self.realconnect
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> EyeLink:  # noqa: PYI034 for python 3.10
         """Enable use as a context manager."""
         if not self._connected:
             self.connect()
