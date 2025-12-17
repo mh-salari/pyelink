@@ -49,10 +49,17 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
         self.tracker = tracker
         self.tracker_version = tracker.get_tracker_version()
         if self.tracker_version >= 3:
+            # enable_search_limits: Enables use/display of global search limits (ON or OFF)
+            # track_search_limits: Enables tracking of pupil to global search limits (ON or OFF)
             self.tracker.send_command(f"enable_search_limits={self.settings.enable_search_limits}")
             self.tracker.send_command(f"track_search_limits={self.settings.track_search_limits}")
+
+            # autothreshold_click: Auto-threshold on mouse click on setup mode image
+            # autothreshold_repeat: Allows repeat of auto-threshold if pupil not centered on first
             self.tracker.send_command(f"autothreshold_click={self.settings.autothreshold_click}")
             self.tracker.send_command(f"autothreshold_repeat={self.settings.autothreshold_repeat}")
+
+            # enable_camera_position_detect: Allows camera position detect on click/auto-threshold in setup mode (TRUE or FALSE)
             self.tracker.send_command(f"enable_camera_position_detect={self.settings.enable_camera_position_detect}")
 
     @abstractmethod

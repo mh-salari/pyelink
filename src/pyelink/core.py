@@ -735,7 +735,19 @@ class EyeLink:  # noqa: PLR0904
         return self.tracker.getFloatData()
 
     def set_calibration_type(self, cal_type: str) -> None:
-        """Set calibration type.
+        """Set calibration type (equation to use as a fit).
+
+        Sets what type of equation to use for calibration fit:
+        - H3: horizontal-only 3-point quadratic
+        - HV3 or 3: 3-point bilinear
+        - HV5 or 5: 5-point bi-quadratic
+        - HV9 or 9: 9-point bi-quadratic with corner correction
+        - HV13: 13-point bi-cubic calibration
+
+        Notes:
+        - HV9 should NOT be used for remote mode
+        - HV13 works best with larger angular displays (> +/-20 degrees)
+        - HV13 should NOT be used when accurate data is needed from corners
 
         Args:
             cal_type: Calibration type string (e.g., 'HV9', 'HV13')
@@ -809,7 +821,8 @@ class EyeLink:  # noqa: PLR0904
             calst = f"HV{self.settings.n_cal_targets}"
             self.set_calibration_type(calst)
 
-            # Enable/disable automatic calibration sequencing
+            # enable_automatic_calibration: Enables automatic sequencing of calibration targets
+            # NO forces manual or remote collection
             auto_cal_value = "YES" if self.settings.enable_automatic_calibration else "NO"
             self.send_command(f"enable_automatic_calibration = {auto_cal_value}")
 
@@ -823,6 +836,10 @@ class EyeLink:  # noqa: PLR0904
             # Execute custom calibration display with updated settings
             pylink.openGraphicsEx(calibration_display)
 
+            # sticky_mode_data_enable: Sets link and/or file data output in modes other than record
+            # Format: "DATA <file samples> <file events> <link samples> <link events>"
+            # Fields can be 0, 1, or ON, OFF, YES, NO
+            # If suffix is blank, data will be turned off
             # Record samples during calibration and validation and store in edf file
             if record_samples:
                 if self.record_raw_data:
@@ -844,6 +861,8 @@ class EyeLink:  # noqa: PLR0904
                 # already offline at that point. If sticky mode is not switched off
                 # properly, we end up with junk samples in a small bit of the edf file,
                 # overwriting part of the next trial
+                # setup_menu_mode: Calls up Setup menu in EyeLink 1, Camera Setup menu in EyeLink II/CL
+                # No data output is available in this mode
                 self.send_command("setup_menu_mode")
                 time.sleep(0.1)  # Wait to finish mode transition
                 self.send_command("set_idle_mode")
@@ -897,12 +916,16 @@ class EyeLink:  # noqa: PLR0904
             cstr = f"heuristic_filter {self.settings.heuristic_filter[0]} {self.settings.heuristic_filter[1]}"
             self.send_command(cstr)
 
+        # set_idle_mode: Enters Offline mode before starting recording
         self.send_command("set_idle_mode")
         time.sleep(0.05)
 
         if record_raw_data:
             sendlink = True  # <--- This is KEY!
 
+        # start_recording: Main data-output mode, optimized for best analog and link data quality
+        # Arguments: <file samples> <file events> <link samples> <link events>
+        # Data control can also be set using "record_data_defaults"
         if sendlink:
             self.tracker.startRecording(1, 1, 1, 1)
         else:
@@ -995,6 +1018,11 @@ class EyeLink:  # noqa: PLR0904
     def _open_data_file(self) -> None:
         """Open EDF data file on the tracker."""
         self._ensure_connected()
+
+        # open_data_file: Opens an eye tracker data file (.EDF extension)
+        # Destroys any file with the same name without warning
+        # If no path given, file written to directory eye tracker is running from
+        # Returns error message or "<filename> successfully created"
         self.tracker.openDataFile(self.edfname)
         logger.info("Data file opened: %s", self.edfname)
 
@@ -1010,6 +1038,9 @@ class EyeLink:  # noqa: PLR0904
     def _close_data_file(self) -> None:
         """Close the EDF data file on the tracker."""
         self._ensure_connected()
+
+        # close_data_file: Closes any open EDF file
+        # Attempts to clean up file structure if closing while data is being recorded
         self.tracker.closeDataFile()
         logger.info("Data file closed")
 
@@ -1125,6 +1156,8 @@ class EyeLink:  # noqa: PLR0904
             message: Text to send (must be < 80 characters)
 
         """
+        # record_status_message: Sets title displayed in Record mode
+        # Use "" or ' ' quotes if message contains spaces
         msg = f"record_status_message '{message}'"
         self.send_command(msg)
 
@@ -1149,6 +1182,9 @@ class EyeLink:  # noqa: PLR0904
 
         """
         trmsg = f"TRIAL_RESULT {rval}"
+
+        # clear_screen: Clear tracker screen for drawing background graphics or messages
+        # Parameter: <color: 0 to 15>
         cscmd = f"clear_screen {scrcol}"
 
         self.send_message(trmsg)
@@ -1180,8 +1216,12 @@ class EyeLink:  # noqa: PLR0904
     def _select_eye(self, eye_tracked: str = "both") -> None:
         """Select eye to track.
 
+        Configures the tracker for monocular or binocular tracking by sending:
+        - binocular_enabled: Sets whether tracking is binocular or monocular
+        - active_eye: Sets which eye to track in monocular mode (LEFT or RIGHT)
+
         Args:
-            eye_tracked: 'both', 'left', or 'right'
+            eye_tracked: 'both' for binocular, 'left' or 'right' for monocular
 
         """
         if "BOTH" in eye_tracked.upper():
@@ -1200,14 +1240,24 @@ class EyeLink:  # noqa: PLR0904
         # Set illumination power
         self.send_command("elcl_tt_power " + str(self.settings.illumination_power))
 
-        # Set display coords for dataviewer
+        # Set screen coordinate system for gaze position and calibration
+        # DISPLAY_COORDS: Message written to EDF file to record display resolution for DataViewer
+        # screen_pixel_coords: Command that sets the gaze-position coordinate system used
+        #                      for calibration targets and drawing commands
+        # Parameters: <left>: X coordinate of left of display area
+        #             <top>: Y coordinate of top of display area
+        #             <right>: X coordinate of right of display area
+        #             <bottom>: Y coordinate of bottom of display area
         disptxt = f"DISPLAY_COORDS 0 0 {sres[0] - 1} {sres[1] - 1}"
         self.send_message(disptxt)
 
         scrtxt = f"screen_pixel_coords 0 0 {sres[0] - 1} {sres[1] - 1}"
         self.send_command(scrtxt)
 
-        # Set geometry to be able to use parser output (left, top, right, bottom, in mm)
+        # screen_phys_coords: Sets the physical screen geometry for visual angle calculations
+        # Measures the distance of display screen edges relative to center (in millimetres)
+        # Parameters: <left>, <top>, <right>, <bottom>: position of display area corners
+        #             relative to display center
         self.send_command(self._build_screen_phys_coords_command())
 
         # screen_distance = <mm to center> | <mm to top> <mm to bottom>
@@ -1225,26 +1275,54 @@ class EyeLink:  # noqa: PLR0904
         if self.settings.camera_lens_focal_length is not None:
             self.send_command(f"camera_lens_focal_length = {self.settings.camera_lens_focal_length}")
         if self.settings.camera_to_screen_distance is not None:
-            # remote_camera_position <rh> <rv> <dx> <dy> <dz>
-            #   <rh>:  rotation of camera from screen (clockwise from top)
-            #          i.e. how much the right edge of the camera is closer than left edge of camera
-            #          10 assumes right edge is closer than left edge
-            #   <rv>: tilt of camera from screen (top toward screen)
-            #   <dx>: bottom-center of display in cam coords
+            # remote_camera_position: Sets position and angles for remote camera mounting
+            # (Desktop Remote Recording configuration)
+            # Parameters: <rh>: rotation of camera from screen (clockwise from top),
+            #                   i.e. how much the right edge of the camera is closer than left edge
+            #             <rv>: tilt of camera from screen (top toward screen)
+            #             <dx>: bottom-center of display in cam coords
+            #             <dy>: bottom-center of display in cam coords
+            #             <dz>: bottom-center of display in cam coords
             self.send_command(f"remote_camera_position = -10 17 80 60 -{self.settings.camera_to_screen_distance}")
 
         # Set content of edf file
+        # file_event_filter: Sets which event types to save to EDF file
+        # Event types: LEFT, RIGHT, FIXATION, FIXUPDATE, SACCADE, BLINK, MESSAGE, BUTTON, INPUT
         self.send_command("file_event_filter = " + self.settings.file_event_filter)
+
+        # link_event_filter: Sets which event types to send over link (same types as file_event_filter)
         self.send_command("link_event_filter = " + self.settings.link_event_filter)
+
+        # link_sample_data: Controls what sample data is transferred over the link
+        # Data types: LEFT/RIGHT, GAZE, GAZERES, AREA, HREF, PUPIL, STATUS, INPUT, HMARKER/HTARGET
         self.send_command("link_sample_data = " + self.settings.link_sample_data)
+
+        # file_sample_data: Sets the contents of sample data in the EDF file recording
+        # Data types: LEFT/RIGHT, GAZE, GAZERES, AREA, HREF, PUPIL, STATUS, INPUT, HMARKER/HTARGET
         self.send_command("file_sample_data = " + self.settings.file_sample_data)
 
         self.send_command(self._build_screen_phys_coords_command(use_equals=True))
+
+        # sample_rate: Sampling rate of the eye tracker (in Hz). Can only be changed in offline
+        # and camera setup modes. Common values: 250, 500, 1000, 2000 Hz. Default: 1000 Hz
         self.send_command(f"sample_rate = {self.settings.sample_rate}")
+
+        # pupil_size_diameter: Sets the type of data used for pupil size
+        # Types: AREA (0), DIAMETER (1, 128*sqrt(area)), WIDTH (2, 180*width), HEIGHT (3, 180*height)
         self.send_command(f"pupil_size_diameter = {self.settings.pupil_size_mode}")
 
+        # calibration_corner_scaling / validation_corner_scaling: Scaling factor for distance
+        # of corner targets from display center. Default is 1.0, but can be 0.75 to 0.9 to
+        # pull in corners (to limit gaze excursion or to limit validation to useful part of display)
+        # NOTE: setting for calibration also sets validation
         self.send_command(" ".join(["calibration_corner_scaling", "=", str(self.settings.calibration_corner_scaling)]))
         self.send_command(" ".join(["validation_corner_scaling", "=", str(self.settings.validation_corner_scaling)]))
+
+        # calibration_area_proportion / validation_area_proportion: For auto generated
+        # calibration/validation point positions, sets the part of width/height of display
+        # to be bounded by targets. Each may have a single proportion or a horizontal
+        # followed by a vertical proportion. Default values: 0.88, 0.83
+        # NOTE: setting for calibration also sets validation
         self.send_command(
             " ".join([
                 "calibration_area_proportion",
@@ -1259,24 +1337,40 @@ class EyeLink:  # noqa: PLR0904
                 " ".join([str(i) for i in self.settings.validation_area_proportion]),
             ])
         )
+
+        # heuristic_filter: Sets level of filtering on link/analog output and file data
+        # <link level> <file level>: 0 or OFF (no filter), 1 or ON (moderate, 1 sample delay),
+        # 2 (extra filtering, 2 sample delay). Default file filter level is 2
         self.send_command(f"heuristic_filter {self.settings.heuristic_filter[0]} {self.settings.heuristic_filter[1]}")
 
+        # use_ellipse_fitter: Controls pupil fitting algorithm
+        # YES for ellipse fitting, NO for centroid (CENTROID mode)
         if "CENTROID" in self.settings.pupil_tracking_mode:
             self.send_command("use_ellipse_fitter = NO")
         else:
             self.send_command("use_ellipse_fitter = YES")
 
     def set_pupil_only_mode(self) -> None:
-        """Set tracker in pupil only mode (no corneal reflection)."""
-        # Activate the selection of pupil only mode
-        self.send_command("force_corneal_reflection = OFF")  # Default OFF
-        self.send_command("allow_pupil_without_cr = ON")  # overwritten in Pupil/CR mode
-        self.send_command("elcl_hold_if_no_corneal = OFF")  # Default OFF
-        self.send_command("elcl_search_if_no_corneal = OFF")  # Default OFF
-        self.send_command("elcl_use_pcr_matching = OFF")  # Default ON
+        """Set tracker in pupil only mode (no corneal reflection).
 
-        # Select it!
-        self.send_command("corneal_mode = NO")  # Default ON
+        Configures the tracker to track only the pupil without requiring a corneal
+        reflection (CR). This mode should only be used when the participant's head
+        is completely fixed (e.g., with a chin rest).
+
+        Commands sent:
+        - force_corneal_reflection = OFF: Disables forcing CR mode
+        - allow_pupil_without_cr = ON: Allows pupil detection without nearby CR
+        - elcl_hold_if_no_corneal = OFF: Don't freeze tracking if CR missing
+        - elcl_search_if_no_corneal = OFF: Don't search for new pupil/CR if CR lost
+        - elcl_use_pcr_matching = OFF: Disables pupil-CR matching
+        - corneal_mode = NO: Activates pupil-only tracking mode
+        """
+        self.send_command("force_corneal_reflection = OFF")
+        self.send_command("allow_pupil_without_cr = ON")
+        self.send_command("elcl_hold_if_no_corneal = OFF")
+        self.send_command("elcl_search_if_no_corneal = OFF")
+        self.send_command("elcl_use_pcr_matching = OFF")
+        self.send_command("corneal_mode = NO")
 
     def _enable_raw_data(self, do_enable: bool = True) -> None:
         """Enable/disable raw pupil and CR in online sample data over link.
@@ -1323,9 +1417,19 @@ class EyeLink:  # noqa: PLR0904
         """
         # Setup the EDF-file such that it adds 'raw' data
         if enable:
+            # file_sample_raw_pcr: Enables raw PCR mode for file output, which outputs only
+            # unmodified full-resolution pupil and CR data. Data encoded using RAW (px,py,pa),
+            # HREF (hx,hy), and gaze(gx,gy,rx,ry) fields. Requires PUPIL, AREA, GAZE, GAZERES,
+            # HREF data types enabled. Default: OFF
             self.send_command("file_sample_raw_pcr = 0")  # Don't write raw data to file...
+
+            # link_sample_raw_pcr: Enables raw PCR mode for link output (same encoding as file).
+            # Outputs unmodified full-resolution pupil and CR data over the link. Default: OFF
             self.send_command("link_sample_raw_pcr = 1")  # only over link
 
+            # raw_pcr_dual_corneal: Enables detection of 2 corneal reflections in raw_pcr mode
+            # These CR's are the 2 candidates closest to the pupil center. Data encoded using
+            # HMARKER with htype code = 0xC0 + (word count). Default: OFF
             # Enable dual corneal tracking only if requested (can add noise during calibration)
             if self.settings.enable_dual_corneal_tracking:
                 self.send_command("raw_pcr_dual_corneal = 1")  # Enable tracking of two CR (corneal reflections)
