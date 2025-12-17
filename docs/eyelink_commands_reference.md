@@ -1500,4 +1500,8 @@ Configuration abbreviations and their meanings:
 **Description**: Whether the drift correction by mouse button click is available in video overlay mode (default is ON).
 **Example**: `video_click_dcorr = OFF`
 
+####  `sample_rate`
+**Syntax**: `sample_rate = <rate>`
+**Description**: Sampling rate of the eye tracker (in Hz). Can only be changed in offline and camera setup modes. If changed in offline mode, may switch to camera setup mode. Common values: 250, 500, 1000, 2000 Hz. Default: 1000 Hz.
+**Example**: `sample_rate = 1000`
 ---
