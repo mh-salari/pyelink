@@ -994,26 +994,15 @@ class EyeLink:  # noqa: PLR0904
     # Recording management methods (from recorder.py)
 
     def _enable_long_filenames(self) -> None:
-        """Enable long filename support on EyeLink Host PC.
-
-        Sends 'long_filename_enabled = YES' command to Host PC.
-        Falls back to 8-character validation if command fails.
-
-        """
+        """Enable long filename support on EyeLink Host PC if configured."""
+        if not self.settings.enable_long_filenames:
+            return
         try:
             self.tracker.sendCommand("long_filename_enabled = YES")
-            logger.info("Long filenames enabled on Host PC (up to %d characters)", self.settings.max_filename_length)
+            logger.info("Long filenames enabled on Host PC...")
         except Exception as e:
-            logger.warning("Could not enable long filenames on Host PC: %s", e)
-            logger.warning("Falling back to 8-character limit")
-
-            # Validate filename with 8-character limit
-            if len(self.settings.filename) > 8:
-                logger.error(  # noqa: TRY400
-                    "Filename '%s' exceeds 8-character limit and long filenames could not be enabled",
-                    self.settings.filename,
-                )
-                sys.exit(1)
+            logger.error("Failed to enable long filenames on Host PC: %s", e)
+            sys.exit(1)
 
     def _open_data_file(self) -> None:
         """Open EDF data file on the tracker."""
