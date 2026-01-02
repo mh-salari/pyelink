@@ -178,10 +178,10 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
                 continue
 
             # Filter 'c' and 'v' keys based on mode
-            if char == "c" and self.mode == "validation-only":
-                continue  # Skip 'c' in validation-only mode
-            if char == "v" and self.mode == "calibration-only":
-                continue  # Skip 'v' in calibration-only mode
+            if char == "c" and self.mode in {"validation-only", "camera-setup"}:
+                continue  # Skip 'c' in validation-only and camera-setup modes
+            if char == "v" and self.mode in {"calibration-only", "camera-setup"}:
+                continue  # Skip 'v' in calibration-only and camera-setup modes
 
             # Lookup key in the general key map
             pylink_key = key_map.get(char)

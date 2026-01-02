@@ -200,10 +200,10 @@ class PygletCalibrationDisplay(CalibrationDisplay):
                     continue
 
                 # Filter 'c' and 'v' keys based on mode
-                if key_name == "c" and self.mode == "validation-only":
-                    continue  # Skip 'c' in validation-only mode
-                if key_name == "v" and self.mode == "calibration-only":
-                    continue  # Skip 'v' in calibration-only mode
+                if key_name == "c" and self.mode in {"validation-only", "camera-setup"}:
+                    continue  # Skip 'c' in validation-only and camera-setup modes
+                if key_name == "v" and self.mode in {"calibration-only", "camera-setup"}:
+                    continue  # Skip 'v' in calibration-only and camera-setup modes
 
                 pylink_key = key_name_map.get(key_name)
                 if pylink_key is not None:

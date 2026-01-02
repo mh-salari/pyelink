@@ -11,6 +11,7 @@ import contextlib
 import logging
 import os
 import signal
+import threading
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -907,6 +908,51 @@ class EyeLink:  # noqa: PLR0904
         else:
             # Dummy mode - show dummy calibration
             calibration_display.dummynote()
+
+    def camera_setup(self) -> None:
+        """Open camera setup screen for adjusting pupil/CR tracking.
+
+        This shows the live camera view with pupil and corneal reflection
+        detection overlays.
+
+        Press Escape to exit camera setup.
+
+        Example:
+            tracker.camera_setup()  # Opens camera view directly
+
+        """
+        if not self.realconnect:
+            logger.info("Camera setup not available in dummy mode")
+            return
+
+        # Save current instruction text and set camera-specific message
+        original_instruction_text = self.settings.calibration_instruction_text
+        self.settings.calibration_instruction_text = "press esc to exit"
+
+        # Create calibration display (needed for camera image rendering)
+        # Use camera-setup mode to disable 'c' and 'v' key handling
+        calibration_display = create_calibration(self.settings, self, mode="camera-setup")
+        calibration_display.set_tracker(self)
+
+        # Close any existing graphics
+        with contextlib.suppress(Exception):
+            pylink.closeGraphics()
+
+        # Set up graphics for camera display
+        pylink.openGraphicsEx(calibration_display)
+
+        # Send Enter key after a short delay to go directly to camera view
+        def send_enter_key() -> None:
+            time.sleep(0.3)  # Wait for setup screen to be ready
+            self.tracker.sendKeybutton(pylink.ENTER_KEY, 0, pylink.KB_PRESS)
+
+        threading.Thread(target=send_enter_key, daemon=True).start()
+
+        # Run tracker setup - Enter key will be sent to go to camera view
+        self.do_tracker_setup(self.settings.screen_res[0], self.settings.screen_res[1])
+
+        # Restore original instruction text
+        self.settings.calibration_instruction_text = original_instruction_text
 
     def start_recording(self, sendlink: bool = False) -> None:
         """Start recording. Waits 50ms to allow EyeLink to prepare.
