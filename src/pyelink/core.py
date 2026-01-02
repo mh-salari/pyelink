@@ -328,6 +328,9 @@ class EyeLink:  # noqa: PLR0904
         if self.settings.enable_long_filenames and self.realconnect:
             self._enable_long_filenames()
 
+        # Check for output file conflicts before opening EDF file
+        self._check_output_file_conflict()
+
         # Open EDF data file
         self._open_data_file()
 
@@ -1083,6 +1086,42 @@ class EyeLink:  # noqa: PLR0904
 
     # Recording management methods (from recorder.py)
 
+    def _check_output_file_conflict(self) -> None:
+        """Check if output EDF file already exists and handle conflict.
+
+        Prompts user to replace or rename if file exists. Updates self.edfname
+        and self.settings.filename if user chooses to rename.
+
+        This runs BEFORE opening the EDF file on the tracker, so the final
+        filename is known before the experiment starts.
+
+        """
+        # Generate full output file path (add .edf extension)
+        output_dir = Path(self.settings.filepath).resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_fpath = output_dir / (self.edfname + ".edf")
+
+        # If file doesn't exist, we're done
+        if not output_fpath.exists():
+            return
+
+        # File exists - prompt user
+        response = self._prompt_file_exists(output_fpath)
+
+        if response == "replace":
+            # Delete the existing file
+            output_fpath.unlink()
+            logger.info("Existing file will be replaced: %s", output_fpath)
+        elif response == "rename":
+            # Get new filename from user
+            new_fpath = self._get_renamed_path(output_fpath)
+            new_filename = new_fpath.stem  # Filename without .edf extension
+
+            # Update both edfname (without .edf) and settings
+            self.edfname = new_filename
+            self.settings.filename = new_filename
+            logger.info("Using renamed file: %s", new_fpath)
+
     def _enable_long_filenames(self) -> None:
         """Enable long filename support on EyeLink Host PC if configured."""
         if not self.settings.enable_long_filenames:
@@ -1136,24 +1175,25 @@ class EyeLink:  # noqa: PLR0904
             fpath: File path that exists
 
         Returns:
-            'replace', 'rename', or 'cancel'
+            'replace' or 'rename'
 
         """
         print(f"\nFile already exists: {fpath}")
         print("Options:")
         print("  1. Replace - Overwrite existing file")
         print("  2. Rename - Save with different name")
-        print("  3. Cancel - Skip file transfer")
 
         while True:
-            choice = input("Enter choice (1/2/3): ").strip()
-            if choice == "1":
-                return "replace"
-            if choice == "2":
-                return "rename"
-            if choice == "3":
-                return "cancel"
-            print("Invalid choice. Please enter 1, 2, or 3.")
+            try:
+                choice = input("Enter choice (1/2): ").strip()
+                if choice == "1":
+                    return "replace"
+                if choice == "2":
+                    return "rename"
+                print("Invalid choice. Please enter 1 or 2.")
+            except KeyboardInterrupt:  # noqa: PERF203
+                print("\nCancelled by user.")
+                os._exit(1)
 
     @staticmethod
     def _get_renamed_path(original_path: Path) -> Path:
@@ -1170,22 +1210,27 @@ class EyeLink:  # noqa: PLR0904
         parent = original_path.parent
 
         while True:
-            new_name = input(f"Enter new filename (without {suffix}): ").strip()
-            if not new_name:
-                print("Filename cannot be empty.")
-                continue
+            try:
+                new_name = input(f"Enter new filename (without {suffix}): ").strip()
+                if not new_name:
+                    print("Filename cannot be empty.")
+                    continue
 
-            new_path = parent / (new_name + suffix)
-            if new_path.exists():
-                print(f"File {new_path} already exists. Try another name.")
-                continue
+                new_path = parent / (new_name + suffix)
+                if new_path.exists():
+                    print(f"File {new_path} already exists. Try another name.")
+                    continue
 
-            return new_path
+                return new_path
+            except KeyboardInterrupt:
+                print("\nCancelled by user.")
+                os._exit(1)
 
     def _transfer_data_file(self, save_path: str) -> None:
         """Transfer EDF file from tracker to display computer.
 
-        If file already exists, prompts user to replace, rename, or cancel.
+        File conflict handling is done in connect() before opening the EDF file,
+        so we can transfer directly here.
 
         WARNING: Don't retrieve a file using PsychoPy. Start exp program from cmd
         otherwise file transfer can be very slow.
@@ -1200,18 +1245,8 @@ class EyeLink:  # noqa: PLR0904
         save_dir = Path(save_path).resolve()
         save_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate full file path (add .edf extension since edfname doesn't include it)
+        # Generate full file path (add .edf extension)
         local_fpath = save_dir / (self.edfname + ".edf")
-
-        # If file exists, always prompt user
-        if local_fpath.exists():
-            response = self._prompt_file_exists(local_fpath)
-            if response == "rename":
-                local_fpath = self._get_renamed_path(local_fpath)
-            elif response == "cancel":
-                logger.info("File transfer cancelled by user")
-                return
-            # 'replace' falls through to overwrite
 
         # Set tracker to offline mode
         self.set_offline_mode()
