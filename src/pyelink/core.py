@@ -7,12 +7,10 @@ EyeLink tracker interface.
 
 from __future__ import annotations
 
-import atexit
 import contextlib
 import logging
 import os
 import signal
-import sys
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -171,12 +169,12 @@ class EyeLink:  # noqa: PLR0904
         # Store data save path for Ctrl+C cleanup
         self._data_save_path = settings.filepath
 
+        # User cleanup registry
+        self._user_cleanups = []
+
         # Connect immediately if auto_connect is True
         if auto_connect:
             self.connect()
-
-        # Register end_experiment with atexit for automatic cleanup
-        atexit.register(self.end_experiment)
 
         # Set up Ctrl+C signal handler for graceful shutdown
         # This handles both terminal focus (SIGINT) and window focus (called by display backends)
@@ -205,7 +203,49 @@ class EyeLink:  # noqa: PLR0904
         logger.critical("Ctrl+C detected - shutting down gracefully...")
         self.end_experiment()
         logger.critical("Cleanup complete. Exiting.")
-        os._exit(0)
+        self._exit_with_cleanup(0)
+
+    def register_cleanup(self, callback: object) -> None:
+        """Register user cleanup function to run before exit.
+
+        Cleanup functions are called in reverse registration order (LIFO)
+        before the program exits. This allows users to register cleanup for
+        external resources like screen capture, logging, etc.
+
+        Args:
+            callback: Callable with no arguments that performs cleanup
+
+        Example:
+            tracker.register_cleanup(capture.stop)
+            tracker.register_cleanup(lambda: print("Done!"))
+
+        """
+        self._user_cleanups.append(callback)
+
+    def _exit_with_cleanup(self, code: int = 0) -> None:
+        """Central exit point - runs all cleanups then exits.
+
+        Executes cleanup in this order:
+        1. User-registered cleanups (LIFO order)
+        2. PyLink graphics cleanup (if error exit)
+        3. os._exit(code) - immediate termination
+
+        Args:
+            code: Exit code (0 for success, 1 for error)
+
+        """
+        # Run user cleanups in reverse order (LIFO)
+        for cleanup in reversed(self._user_cleanups):
+            try:
+                cleanup()
+            except Exception as e:  # noqa: PERF203
+                logger.warning("User cleanup failed: %s", e)
+
+        # Run minimal tracker cleanup on error exit
+        if code != 0:
+            _cleanup_on_exit()
+
+        os._exit(code)
 
     def connect(self) -> None:
         """Connect to tracker and initialize all components.
@@ -257,21 +297,18 @@ class EyeLink:  # noqa: PLR0904
                 logger.error("  3. Host PC IP address matches settings.host_ip")  # noqa: TRY400
                 logger.error("  4. Your computer's IP is on the same subnet (e.g., 100.1.1.2)")  # noqa: TRY400
                 logger.error("Cleaning up and exiting...")  # noqa: TRY400
-                _cleanup_on_exit()
-                sys.exit(1)
+                self._exit_with_cleanup(1)
             except Exception:
                 logger.exception("Unexpected error while connecting to EyeLink")
                 logger.error("Cleaning up and exiting...")  # noqa: TRY400
-                _cleanup_on_exit()
-                sys.exit(1)
+                self._exit_with_cleanup(1)
 
             if self.tracker is not None and is_connected:
                 self.realconnect = True
                 logger.info("Successfully connected to EyeLink at %s", self.settings.host_ip)
             else:
                 logger.error("Failed to connect to EyeLink at %s (unknown error)", self.settings.host_ip)
-                _cleanup_on_exit()
-                sys.exit(1)
+                self._exit_with_cleanup(1)
 
         # Close the minimal alert handler graphics
         with contextlib.suppress(Exception):
@@ -1001,8 +1038,8 @@ class EyeLink:  # noqa: PLR0904
             self.tracker.sendCommand("long_filename_enabled = YES")
             logger.info("Long filenames enabled on Host PC...")
         except Exception as e:
-            logger.error("Failed to enable long filenames on Host PC: %s", e)
-            sys.exit(1)
+            logger.error("Failed to enable long filenames on Host PC: %s", e)  # noqa: TRY400
+            self._exit_with_cleanup(1)
 
     def _open_data_file(self) -> None:
         """Open EDF data file on the tracker."""
