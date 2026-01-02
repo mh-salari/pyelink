@@ -1258,7 +1258,6 @@ class EyeLink:  # noqa: PLR0904
 
         # Transfer file
         logger.info("Receiving data file from Host PC: %s.edf", self.edfname)
-        logger.info("Saving locally to: %s", local_fpath)
         file_size = self.tracker.receiveDataFile(self.edfname, str(local_fpath))
 
         # Log result
