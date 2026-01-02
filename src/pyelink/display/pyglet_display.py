@@ -109,6 +109,9 @@ class PygletDisplay(BaseDisplay):
 
     def close(self) -> None:
         """Close pyglet window."""
+        # Exit fullscreen mode first
+        if self._window.fullscreen:
+            self._window.set_fullscreen(False)
         self._window.close()
 
     def get_events(self) -> list[dict[str, Any]]:
