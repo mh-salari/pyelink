@@ -147,7 +147,7 @@ class EyeLink:  # noqa: PLR0904
         # Hardware connection state
         self.tracker: pylink.EyeLink | None = None
         self.realconnect = False
-        self.edfname = settings.filename + ".edf"
+        self.edfname = settings.filename  # Note: .edf extension added automatically by openDataFile()
         self._alert_handler: object | None = None
 
         # Store initialization parameters for deferred setup
@@ -1036,6 +1036,8 @@ class EyeLink:  # noqa: PLR0904
             return
         try:
             self.tracker.sendCommand("long_filename_enabled = YES")
+            # Verify the command was accepted
+            time.sleep(0.1)  # Give it a moment to process
             logger.info("Long filenames enabled on Host PC...")
         except Exception as e:
             logger.error("Failed to enable long filenames on Host PC: %s", e)  # noqa: TRY400
@@ -1045,12 +1047,15 @@ class EyeLink:  # noqa: PLR0904
         """Open EDF data file on the tracker."""
         self._ensure_connected()
 
-        # open_data_file: Opens an eye tracker data file (.EDF extension)
+        # open_data_file: Opens an eye tracker data file (.EDF extension is added automatically)
         # Destroys any file with the same name without warning
         # If no path given, file written to directory eye tracker is running from
         # Returns error message or "<filename> successfully created"
-        self.tracker.openDataFile(self.edfname)
-        logger.info("Data file opened: %s", self.edfname)
+
+        # Use sendCommand for long filename support (>8 chars)
+        # openDataFile() has issues with long filenames even when enabled
+        self.tracker.sendCommand(f"open_data_file {self.edfname}")
+        logger.info("Data file opened: %s.edf", self.edfname)
 
     def is_recording(self) -> bool:
         """Check if currently recording.
@@ -1142,8 +1147,8 @@ class EyeLink:  # noqa: PLR0904
         save_dir = Path(save_path).resolve()
         save_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate full file path
-        local_fpath = save_dir / self.edfname
+        # Generate full file path (add .edf extension since edfname doesn't include it)
+        local_fpath = save_dir / (self.edfname + ".edf")
 
         # If file exists, always prompt user
         if local_fpath.exists():
@@ -1164,7 +1169,7 @@ class EyeLink:  # noqa: PLR0904
         time.sleep(1)
 
         # Transfer file
-        logger.info("Receiving data file from Host PC: %s", self.edfname)
+        logger.info("Receiving data file from Host PC: %s.edf", self.edfname)
         logger.info("Saving locally to: %s", local_fpath)
         file_size = self.tracker.receiveDataFile(self.edfname, str(local_fpath))
 
