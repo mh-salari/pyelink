@@ -997,6 +997,13 @@ class EyeLink:  # noqa: PLR0904
 
         logger.info("Experiment cleanup and EDF file transfer...")
 
+        # Run user cleanups in reverse order (LIFO)
+        for cleanup in reversed(self._user_cleanups):
+            try:
+                cleanup()
+            except Exception as e:  # noqa: PERF203
+                logger.warning("User cleanup failed: %s", e)
+
         # Stop recording if active
         with contextlib.suppress(Exception):
             self.stop_recording()
