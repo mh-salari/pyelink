@@ -347,22 +347,6 @@ class Settings(BaseModel):
     )
 
     # Fixation target settings (for ABC types)
-    fixation_target_scale: float = Field(
-        default=0.75,
-        ge=0.1,
-        le=2.0,
-        description="""Global scale factor for all fixation target components.
-
-        Multiplies all target component sizes (center, outer, cross).
-        Default: 0.75 provides good visibility without being intrusive.
-
-        Increase for participants with visual impairments.
-        Decrease for high-resolution displays or precise work.
-
-        Reference: DEFAULTS.INI line 56
-        """,
-    )
-
     fixation_center_diameter: float = Field(
         default=0.075,
         ge=0.01,
@@ -370,14 +354,7 @@ class Settings(BaseModel):
         description="""Center dot diameter in degrees of visual angle ('A' component).
 
         This is the small central dot participants fixate on.
-        Default: 0.075° (computed as 0.1 * fixation_target_scale)
-
-        Smaller values = more precise fixation point
-        Larger values = easier to see but less precise
-
-        Must account for viewing distance and screen resolution.
-
-        Reference: DEFAULTS.INI line 57
+        Default: 0.075°
         """,
     )
 
@@ -388,11 +365,7 @@ class Settings(BaseModel):
         description="""Outer ring diameter in degrees of visual angle ('B' component).
 
         Surrounds the center dot to increase visibility.
-        Default: 0.45° (computed as 0.6 * fixation_target_scale)
-
-        Should be 5-10x larger than fixation_center_diameter for good contrast.
-
-        Reference: DEFAULTS.INI line 58
+        Default: 0.45°
         """,
     )
 
@@ -401,11 +374,7 @@ class Settings(BaseModel):
         ge=0.01,
         le=1.0,
         description="""Cross width in degrees of visual angle ('C' component).
-
-        Cross extends beyond outer ring for maximum visibility.
-        Default: 0.1275° (computed as 0.17 * fixation_target_scale)
-
-        Reference: DEFAULTS.INI line 59
+        Default: 0.1275°
         """,
     )
 
@@ -417,8 +386,6 @@ class Settings(BaseModel):
         Default: (0, 0, 0, 255) = black, fully opaque
 
         Alpha channel (A) controls transparency: 255=opaque, 0=transparent.
-
-        Reference: DEFAULTS.INI line 60
         """,
     )
 
@@ -427,8 +394,6 @@ class Settings(BaseModel):
         description="""RGBA color for outer ring.
 
         Default: (0, 0, 0, 255) = black, fully opaque
-
-        Reference: DEFAULTS.INI line 61
         """,
     )
 
@@ -439,8 +404,6 @@ class Settings(BaseModel):
         Default: (255, 255, 255, 0) = white but fully transparent
 
         Set alpha to 255 to make cross visible.
-
-        Reference: DEFAULTS.INI line 62
         """,
     )
 
@@ -453,8 +416,6 @@ class Settings(BaseModel):
 
         Only used when target_type="CIRCLE".
         Default: 15 pixels
-
-        Reference: DEFAULTS.INI line 65
         """,
     )
 
@@ -466,24 +427,18 @@ class Settings(BaseModel):
 
         Only used when target_type="CIRCLE".
         Creates a ring by having smaller inner filled circle.
-
-        Reference: DEFAULTS.INI line 66
         """,
     )
 
     circle_outer_color: tuple[int, int, int] = Field(
         default=(0, 0, 0),
         description="""RGB color for circle outer ring (CIRCLE target type).
-
-        Reference: DEFAULTS.INI line 67
         """,
     )
 
     circle_inner_color: tuple[int, int, int] = Field(
         default=(128, 128, 128),
         description="""RGB color for circle center (CIRCLE target type).
-
-        Reference: DEFAULTS.INI line 68
         """,
     )
 
