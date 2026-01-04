@@ -1,6 +1,6 @@
 uv.lock
 _tmp/*
-
+data/*
 # Example data directory
 examples/data/
 *.edf
