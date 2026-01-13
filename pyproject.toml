@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 [project]
 name = "pyelink"
-version = "1.0.0"
+dynamic = ["version"]
 description = "Python wrapper for SR Research EyeLink eye trackers"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -67,11 +67,11 @@ conflicts = [
     ],
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.version]
+source = "vcs"
 
-[tool.setuptools.package-data]
-pyelink = ["py.typed"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyelink"]
 
 [tool.ruff]
 line-length = 119
@@ -181,3 +181,6 @@ exclude = [
     "_old_code",
     ".venv",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/**/*.py" = ["INP001", "T201"]  # Allow print and no __init__.py in examples
