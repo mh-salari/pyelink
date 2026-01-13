@@ -51,19 +51,23 @@ brew install portaudio
 import pyelink as el
 
 # Configure tracker with backend
-settings = el.Settings()
-settings.BACKEND = 'pygame'  # or 'psychopy', 'pyglet'
-settings.FULLSCREEN = True
-settings.SCREEN_RES = [1920, 1080]
+settings = el.Settings(
+    backend='pygame',  # or 'psychopy', 'pyglet'
+    fullscreen=True,
+    screen_width=1920,
+    screen_height=1080,
+    filename="mydata",
+    filepath="./data/",
+)
 
 # Tracker creates and owns the window
 tracker = el.EyeLink(settings)
 
-# Calibrate (no parameters needed!)
-tracker.calibrate()
+# Calibrate (optionally record samples during calibration)
+tracker.calibrate(record_samples=True)
 
 # Option A: Direct window access for custom drawing
-tracker.window.fill((128, 128, 128))
+tracker.window.fill((128, 128, 128))  # pygame example
 # ... backend-specific drawing ...
 tracker.flip()
 
@@ -76,8 +80,8 @@ tracker.start_recording()
 # ... show stimuli, collect data ...
 tracker.stop_recording()
 
-# Clean up (closes window automatically)
-tracker.end_experiment('./')
+# Clean up (closes window and saves EDF automatically)
+tracker.end_experiment()
 ```
 
 ## Development

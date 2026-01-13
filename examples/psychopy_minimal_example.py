@@ -41,7 +41,7 @@ text_stim = visual.TextStim(tracker.window, height=100, color=[1, 1, 1])
 for i in range(5, 0, -1):
     print(f"Recording... {i}")
     # Direct access to PsychoPy visual.Window
-    tracker.window.color = [0, 0, 0]  # Gray background in PsychoPy
+    tracker.window.color = [0, 0, 0]  # Black background in PsychoPy (uses -1 to 1 color space)
     text_stim.text = str(i)
     text_stim.draw()
     tracker.window.flip()
