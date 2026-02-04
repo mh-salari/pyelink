@@ -19,7 +19,10 @@ pip install pyelink[psychopy]
 pip install pyelink[pyglet]
 ```
 
-You'll also need to install pylink separately from SR Research:
+You'll also need to install the **EyeLink Developers Kit** (native C libraries) from:
+https://www.sr-research.com/support/thread-13.html
+
+Then install pylink separately from SR Research:
 ```bash
 pip install --index-url=https://pypi.sr-support.com sr-research-pylink
 ```
