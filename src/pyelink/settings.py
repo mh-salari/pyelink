@@ -156,7 +156,7 @@ class Settings(BaseModel):
 
     calibration_corner_scaling: float = Field(
         default=1.0,
-        ge=0.5,
+        ge=0.1,
         le=1.5,
         description="""Distance of corner calibration targets from screen edge.
 
@@ -164,7 +164,7 @@ class Settings(BaseModel):
         - <1.0: Closer to center (reduces required gaze excursion)
         - >1.0: Closer to edge (increases coverage area)
 
-        Range: 0.5-1.5
+        Range: 0.1-1.5
 
         Use <1.0 to reduce head movement requirements or limit gaze angles.
         Use >1.0 only if you need to calibrate extreme peripheral vision.
@@ -175,7 +175,7 @@ class Settings(BaseModel):
 
     validation_corner_scaling: float = Field(
         default=1.0,
-        ge=0.5,
+        ge=0.1,
         le=1.5,
         description="""Distance of corner validation targets from screen edge.
 
