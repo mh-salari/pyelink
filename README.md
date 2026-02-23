@@ -1,5 +1,10 @@
 # PyeLink
 
+[![PyPI version](https://img.shields.io/pypi/v/pyelink)](https://pypi.org/project/pyelink/)
+[![Downloads](https://static.pepy.tech/badge/pyelink)](https://pepy.tech/project/pyelink)
+[![License](https://img.shields.io/pypi/l/pyelink)](https://github.com/mh-salari/pyelink/blob/main/LICENSE)
+<!-- [![DOI](https://img.shields.io/badge/DOI-TODO-blue)](https://doi.org/TODO) -->
+
 Python wrapper for SR Research EyeLink eye trackers.
 
 ## Installation
