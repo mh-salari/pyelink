@@ -291,15 +291,17 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
         """Get keyboard input and return list of pylink.KeyInput objects.
 
         Should poll for keyboard events and convert them to EyeLink key codes.
+
         Commonly used keys:
-            - Escape: pylink.ESC_KEY
-            - Enter/Return: pylink.ENTER_KEY
-            - Space: ord(' ')
-            - Arrow keys: pylink.CURS_UP, pylink.CURS_DOWN, pylink.CURS_LEFT, pylink.CURS_RIGHT
-            - Page Up/Down: pylink.PAGE_UP, pylink.PAGE_DOWN
-            - 'c': calibrate
-            - 'v': validate
-            - 'a': auto threshold
+
+        - Escape: pylink.ESC_KEY
+        - Enter/Return: pylink.ENTER_KEY
+        - Space: ord(' ')
+        - Arrow keys: pylink.CURS_UP, pylink.CURS_DOWN, pylink.CURS_LEFT, pylink.CURS_RIGHT
+        - Page Up/Down: pylink.PAGE_UP, pylink.PAGE_DOWN
+        - 'c': calibrate
+        - 'v': validate
+        - 'a': auto threshold
 
         Returns:
             list: List of pylink.KeyInput objects, or empty list if no input

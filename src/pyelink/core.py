@@ -543,7 +543,8 @@ class EyeLink:  # noqa: PLR0904
             text_color: Text RGB color (default: white (255, 255, 255))
             text_size: Font size in points (default: 32)
 
-        Example:
+        Example::
+
             tracker.show_message("Press SPACE when ready")
             tracker.wait_for_key('space')
 
@@ -591,11 +592,13 @@ class EyeLink:  # noqa: PLR0904
 
         Returns:
             dict with keys:
-                - 'duration': Actual trial duration in seconds
-                - 'ui_events': List of UI event dicts that occurred
-                - 'ended_by': 'duration', 'callback', or 'escape'
 
-        Example:
+            - 'duration': Actual trial duration in seconds
+            - 'ui_events': List of UI event dicts that occurred
+            - 'ended_by': 'duration', 'callback', or 'escape'
+
+        Example::
+
             def draw_stimulus(window, data):
                 # window is raw backend window (Option A access within callback)
                 window.fill((128, 128, 128))
@@ -672,25 +675,50 @@ class EyeLink:  # noqa: PLR0904
         }
 
     def send_command(self, command: str) -> None:
-        """Send a command to the EyeLink tracker.
+        """Send a raw command to the EyeLink tracker.
 
-        Commands configure tracker behavior but are not recorded in the data file.
+        This gives direct access to **any** EyeLink command, including those not
+        exposed through the :class:`~pyelink.settings.Settings` class. Commands
+        configure tracker behavior but are **not** recorded in the data file.
+
+        See :doc:`/eyelink_commands_reference` for a full list of available commands.
 
         Args:
-            command: Command to send
+            command: EyeLink command string (same syntax as INI files on Host PC)
+
+        Example::
+
+            # Change sample rate
+            tracker.send_command("sample_rate = 500")
+
+            # Set screen coordinates
+            tracker.send_command("screen_pixel_coords = 0 0 1919 1079")
+
+            # Configure parser thresholds
+            tracker.send_command("select_parser_configuration 0")
+
+            # Any command from the EyeLink Host PC INI files works
+            tracker.send_command("heuristic_filter 1 2")
 
         """
         self._ensure_connected()
         self.tracker.sendCommand(command)
 
     def send_message(self, message: str) -> None:
-        """Send a message to the tracker that is recorded in the EDF.
+        """Send a timestamped message recorded in the EDF data file.
 
-        Messages are timestamped annotations in the data file, useful for marking
-        events during recording (trial starts, stimulus onsets, responses, etc.).
+        Messages are annotations in the data file, useful for marking events
+        during recording (trial starts, stimulus onsets, responses, etc.).
+        Each message is timestamped by the tracker with microsecond precision.
 
         Args:
-            message: Message to send
+            message: Message string to record in EDF file
+
+        Example::
+
+            tracker.send_message("TRIALID 1")
+            tracker.send_message("STIMULUS_ONSET image.png")
+            tracker.send_message(f"RESPONSE key={response} rt={rt:.3f}")
 
         """
         self._ensure_connected()

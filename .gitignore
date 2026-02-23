@@ -54,6 +54,9 @@ coverage.xml
 .dmypy.json
 dmypy.json
 
+# Sphinx documentation
+docs/_build/
+
 # Logs
 *.log
 

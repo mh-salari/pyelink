@@ -51,9 +51,17 @@ dev = [
     "ruff>=0.1.0",
 ]
 
+[dependency-groups]
+docs = [
+    "myst-parser>=5.0; python_version >= '3.11'",
+    "sphinx>=9.0; python_version >= '3.11'",
+    "sphinx-autodoc-typehints>=3.6; python_version >= '3.11'",
+    "sphinx-rtd-theme>=3.1; python_version >= '3.11'",
+]
+
 [project.urls]
 Homepage = "https://github.com/mh-salari/pyelink"
-Documentation = "https://github.com/mh-salari/pyelink#readme"
+Documentation = "https://pyelink.readthedocs.io/"
 Repository = "https://github.com/mh-salari/pyelink"
 Issues = "https://github.com/mh-salari/pyelink/issues"
 
@@ -184,3 +192,7 @@ exclude = [
 
 [tool.ruff.lint.per-file-ignores]
 "examples/**/*.py" = ["INP001", "T201"]  # Allow print and no __init__.py in examples
+"docs/conf.py" = ["INP001"]  # Sphinx config is not a package
+"docs/_ext/**/*.py" = ["INP001", "TC002", "PLR6301", "PLC0415"]  # Sphinx extensions
+"src/pyelink/__init__.py" = ["RUF067"]  # __init__ contains public API metadata
+"src/pyelink/calibration/__init__.py" = ["RUF067"]  # __init__ contains factory functions
