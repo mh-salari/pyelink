@@ -15,7 +15,7 @@ PyeLink implements a subset of these commands through its Python API, with gradu
 ### Statistics
 
 - **Configuration Files**: 21 INI files
-- **Total Commands**: 290+ commands and settings
+- **Total Commands**: 390+ commands and settings
 - **Categories**: Calibration, display configuration, data recording, analog output, parser settings, physical setup, and more
 
 ### How to Use This Reference
@@ -35,6 +35,146 @@ For commands not yet wrapped in PyeLink's high-level API, you can use the tracke
 **Syntax**: `remote_camera_position = <rh> <rv> <dx> <dy> <dz>`
 **Description**: Sets the position and angles for remote camera mounting (Desktop Remote Recording configuration). <rh>: rotation of camera from screen (clockwise from top), i.e. how much the right edge of the camera is closer than left edge of camera. <rv>: tilt of camera from screen (top toward screen). <dx>: bottom-center of display in cam coords. <dy>: bottom-center of display in cam coords. <dz>: bottom-center of display in cam coords.
 **Example**: `remote_camera_position = -10 17 80 60 -90`
+
+### `remote_distance_warn_range`
+**Syntax**: `remote_distance_warn_range = <min_mm>, <max_mm>`
+**Description**: Sets the acceptable distance range for remote tracking. When the participant's distance falls outside this range, a warning is displayed on the Host PC.
+**Example**: `remote_distance_warn_range = 500, 700`
+
+### `remote_distance_coeffs`
+**Syntax**: `remote_distance_coeffs <coeff1> <coeff2>`
+**Description**: Coefficients for computing eye-to-camera distance from the target sticker marker separation in remote mode. Derived from the camera focal length and known target sticker geometry.
+**Example**: `remote_distance_coeffs 11.70 0`
+
+### `remote_distance_scaling`
+**Syntax**: `remote_distance_scaling <scale> <reference_distance>`
+**Description**: Scaling factor and reference distance for remote distance computation. Used to fine-tune the distance estimation algorithm.
+**Example**: `remote_distance_scaling 1.0 600`
+
+### `remote_edge_warn_pixels`
+**Syntax**: `remote_edge_warn_pixels = <pixels>`
+**Description**: Number of pixels from the camera image edge at which to warn that the participant is moving out of the trackable area in remote mode.
+**Example**: `remote_edge_warn_pixels = 100`
+
+### `remote_eye_magnified`
+**Syntax**: `remote_eye_magnified <ON or OFF>`
+**Description**: Controls whether the eye image is magnified in the zoomed view during remote tracking. Saved in lastrun.ini.
+**Example**: `remote_eye_magnified ON`
+
+### `remote_target_eye_distance_warn`
+**Syntax**: `remote_target_eye_distance_warn <pixels>`
+**Description**: Maximum allowed distance in camera pixels between the target sticker and the eye before a warning is issued during remote tracking.
+**Example**: `remote_target_eye_distance_warn 160`
+
+### `remote_target_search_thresholds`
+**Syntax**: `remote_target_search_thresholds <params...>`
+**Description**: Threshold parameters for detecting the target sticker markers in remote mode. Multiple thresholds are provided for different search stages and lighting conditions.
+**Example**: `remote_target_search_thresholds 155 190 130 210 100 80 60`
+
+### `remote_limit_by_target`
+**Syntax**: `remote_limit_by_target <left_enable> <right_enable>`
+**Description**: Controls whether the eye search region is limited based on the detected target sticker position in remote mode. Separate flags for left and right eyes.
+**Example**: `remote_limit_by_target 1 1`
+
+### `remote_cr_offset`
+**Syntax**: `remote_cr_offset <distance> <x_offset> <y_offset>`
+**Description**: Corneal reflection offset parameters for remote mode. Compensates for the geometric offset between the CR and the illuminator position based on the camera-eye-illuminator geometry.
+**Example**: `remote_cr_offset 7.8 -130 0`
+
+### `remote_pupil_size_adjust`
+**Syntax**: `remote_pupil_size_adjust <enable>`
+**Description**: Enables distance-based pupil size adjustment in remote mode. When enabled, the reported pupil size is corrected for changes in eye-to-camera distance.
+**Example**: `remote_pupil_size_adjust 1`
+
+### `remote_search_latency`
+**Syntax**: `remote_search_latency = <search_time> <settle_time>`
+**Description**: Controls the timing of the target sticker search in remote mode. First value is the search duration, second is the settle time after detection, both in milliseconds.
+**Example**: `remote_search_latency = 1000 500`
+
+### `remote_href_align`
+**Syntax**: `remote_href_align <YES or NO>`
+**Description**: Controls whether HREF alignment is performed in remote mode. When enabled, the HREF coordinate system is aligned based on the target sticker markers.
+**Example**: `remote_href_align NO`
+
+### `remote_target_zoom`
+**Syntax**: `remote_target_zoom <factor>`
+**Description**: Zoom factor for the target sticker display in the Camera Setup screen during remote tracking.
+**Example**: `remote_target_zoom 0.25`
+
+### `remote_binocular_split_offset`
+**Syntax**: `remote_binocular_split_offset <offset>`
+**Description**: Offset for the split between left and right eye images in binocular remote mode. Saved in lastrun.ini.
+**Example**: `remote_binocular_split_offset 0`
+
+### `remote_eye_limit_size`
+**Syntax**: `remote_eye_limit_size = <left_w>,<left_h> <right_w>,<right_h>`
+**Description**: Size of the eye search region in camera pixels for remote tracking. Separate values for left and right eyes. Saved in lastrun.ini.
+**Example**: `remote_eye_limit_size = 426,498 498,498`
+
+### `remote_eye_target_offset`
+**Syntax**: `remote_eye_target_offset = <left_x>, <left_y>, <left_z> <right_x>, <right_y>, <right_z>`
+**Description**: Offset from the target sticker to each eye in camera coordinates for remote tracking. Determined during tracking and saved in lastrun.ini.
+**Example**: `remote_eye_target_offset = -262.7, 160.8, 82.0  220.1, 196.2, 86.2`
+
+### `remote_target_limits_offset`
+**Syntax**: `remote_target_limits_offset <left_x> <left_y> <right_x> <right_y>`
+**Description**: Offset of the target search limits from the current target position in camera pixels. Saved in lastrun.ini.
+**Example**: `remote_target_limits_offset -298 240 273 234`
+
+### `remote_target_limits_ref`
+**Syntax**: `remote_target_limits_ref <left_x> <left_y> <left_size> <right_x> <right_y> <right_size>`
+**Description**: Reference position and size for the target sticker search limits in remote mode. Saved in lastrun.ini.
+**Example**: `remote_target_limits_ref 1050 830 101  1051 830 101`
+
+### `remote_target_limits_size`
+**Syntax**: `remote_target_limits_size <left_w> <left_h> <right_w> <right_h>`
+**Description**: Size of the target sticker search region in camera pixels for remote tracking. Saved in lastrun.ini.
+**Example**: `remote_target_limits_size 426 498 498 498`
+
+### `remote_autothreshold_enabled`
+**Syntax**: `remote_autothreshold_enabled <YES or NO>`
+**Description**: Enables automatic threshold adjustment during remote (head-free) tracking. When enabled, the tracker automatically adjusts pupil and CR thresholds to compensate for changes in eye-camera distance and illumination.
+**Example**: `remote_autothreshold_enabled YES`
+
+### `remote_autothreshold_cr_settings`
+**Syntax**: `remote_autothreshold_cr_settings <gfract> <wfract>`
+**Description**: Controls the automatic CR threshold adjustment parameters for remote tracking. `<gfract>`: gain fraction for CR threshold adjustment. `<wfract>`: weight fraction for CR threshold smoothing.
+**Example**: `remote_autothreshold_cr_settings 0.05 0.03`
+
+### `remote_autothreshold_default_pupil_bias`
+**Syntax**: `remote_autothreshold_default_pupil_bias = <bias>`
+**Description**: Sets the default pupil threshold bias for remote autothreshold. A value of 1.0 means no bias adjustment.
+**Example**: `remote_autothreshold_default_pupil_bias = 1.0`
+
+### `remote_autothreshold_pupil_area`
+**Syntax**: `remote_autothreshold_pupil_area = <min_area>, <max_area>, <scale>`
+**Description**: Sets the expected pupil area range and scaling for remote autothreshold adjustment.
+**Example**: `remote_autothreshold_pupil_area = 3, 50, 4.0`
+
+### `remote_autothreshold_limits`
+**Syntax**: `remote_autothreshold_limits = <min_threshold>, <max_threshold>`
+**Description**: Sets the minimum and maximum threshold values that the remote autothreshold system is allowed to use.
+**Example**: `remote_autothreshold_limits = 45, 140`
+
+### `remote_autothreshold_window`
+**Syntax**: `remote_autothreshold_window = <params...>`
+**Description**: Controls the temporal window parameters for the remote autothreshold system. Defines how quickly the threshold adapts to changes.
+**Example**: `remote_autothreshold_window = 10, 2, 7, 1.8`
+
+### `remote_autothreshold_filter`
+**Syntax**: `remote_autothreshold_filter = <params...> <ON or OFF>`
+**Description**: Controls the filtering applied to the remote autothreshold system. The ON/OFF flag enables or disables the filter.
+**Example**: `remote_autothreshold_filter = 50, 150, ON`
+
+### `remote_autothreshold_pupil_bias`
+**Syntax**: `remote_autothreshold_pupil_bias <left_bias> <right_bias>`
+**Description**: Per-eye pupil threshold bias values for remote autothreshold. Saved in lastrun.ini. These are adjusted automatically during tracking.
+**Example**: `remote_autothreshold_pupil_bias 0.941 0.887`
+
+### `remote_autothreshold_cr_bias`
+**Syntax**: `remote_autothreshold_cr_bias <left_bias> <right_bias>`
+**Description**: Per-eye CR threshold bias values for remote autothreshold. Saved in lastrun.ini. These are adjusted automatically during tracking.
+**Example**: `remote_autothreshold_cr_bias 1.200 1.240`
 
 ### `screen_phys_coords`
 **Syntax**: `screen_phys_coords = <left>, <top>, <right>, <bottom>`
@@ -208,6 +348,11 @@ analog_y_range = GAZE, -0.2, 1.2
 **Syntax**: `button_status_display = <switch>`
 **Description**: Enables button feedback display on output and Record mode screens. DEFAULT: ON.
 **Example**: `button_status_display = ON`
+
+### `lock_calibration_type`
+**Syntax**: `lock_calibration_type`
+**Description**: Prevents the calibration type from being changed via the Set Options screen. Used in mount-specific INI files to lock the calibration type to an appropriate value for the configuration.
+**Example**: `lock_calibration_type`
 
 ### `calibration_type`
 **Syntax**: `calibration_type = <type>`
@@ -560,6 +705,66 @@ Ordering for points in bi-cubic ("HV13", 13 pt) cal. Point order:
 **Description**: Resets all calibration values to defaults before collecting new calibration. Last good calibration is saved before this, so should have no effect. DEFAULT: ON.
 **Example**: `always_default_calibration = ON`
 
+### `eye_camera_units_per_degree`
+**Syntax**: `eye_camera_units_per_degree = <units>`
+**Description**: Scaling factor for raw eye camera pupil position in units per visual degree. Used for saccade detection on raw pupil data before calibration. Typical default is 2.0.
+**Example**: `eye_camera_units_per_degree = 2.0`
+
+### `crd_scaler`
+**Syntax**: `crd_scaler = <left_scale>, <right_scale>`
+**Description**: Corneal Reflection Distance (CRD) scaler. Compensates for the geometric relationship between the camera, illuminator, and eye. Adjusts the P-CR vector based on the physical separation between the camera lens and IR illuminator. Separate values for left and right eyes.
+**Example**: `crd_scaler = 1.01, 1.01`
+
+### `minimum_eyecam_x_upd`
+**Syntax**: `minimum_eyecam_x_upd = <value>`
+**Description**: Minimum acceptable X gain (units per degree) for calibration validation. If the computed X gain falls below this value, the calibration is rejected. Part of the calibration quality checking system.
+**Example**: `minimum_eyecam_x_upd = 0.5`
+
+### `maximum_eyecam_x_upd`
+**Syntax**: `maximum_eyecam_x_upd = <value>`
+**Description**: Maximum acceptable X gain (units per degree) for calibration validation.
+**Example**: `maximum_eyecam_x_upd = 10.0`
+
+### `minimum_eyecam_y_upd`
+**Syntax**: `minimum_eyecam_y_upd = <value>`
+**Description**: Minimum acceptable Y gain (units per degree) for calibration validation.
+**Example**: `minimum_eyecam_y_upd = 0.25`
+
+### `maximum_eyecam_y_upd`
+**Syntax**: `maximum_eyecam_y_upd = <value>`
+**Description**: Maximum acceptable Y gain (units per degree) for calibration validation.
+**Example**: `maximum_eyecam_y_upd = 5.0`
+
+### `maximum_xy_gain_ratio`
+**Syntax**: `maximum_xy_gain_ratio = <ratio>`
+**Description**: Maximum allowed ratio of Y gain to X gain (Gy/Gx) during calibration validation. This ratio is usually greater than 1.0. Prevents accepting calibrations with extreme anisotropic scaling.
+**Example**: `maximum_xy_gain_ratio = 5.0`
+
+### `minimum_xy_gain_ratio`
+**Syntax**: `minimum_xy_gain_ratio = <ratio>`
+**Description**: Minimum allowed ratio of Y gain to X gain (Gy/Gx) during calibration validation.
+**Example**: `minimum_xy_gain_ratio = 1.0`
+
+### `maximum_linear_crossterm`
+**Syntax**: `maximum_linear_crossterm = <value>`
+**Description**: Maximum allowed rotational/skew gain coefficient in the calibration polynomial. Limits how much cross-coupling between X and Y is acceptable.
+**Example**: `maximum_linear_crossterm = 0.8`
+
+### `maximum_nonlinearity`
+**Syntax**: `maximum_nonlinearity = <x_ratio>, <y_ratio>`
+**Description**: Maximum allowed left/right and top/bottom gain ratios for the linearity test within the good-pupil region. Limits how much the gain can vary across the calibrated area.
+**Example**: `maximum_nonlinearity = 2.0, 4.0`
+
+### `maximum_corner_fixup`
+**Syntax**: `maximum_corner_fixup = <ratio>`
+**Description**: Maximum allowed ratio of corner correction terms to linear terms in the calibration polynomial. Prevents corner correction from dominating the overall mapping.
+**Example**: `maximum_corner_fixup = 0.6`
+
+### `show_cal_target_while_waiting`
+**Syntax**: `show_cal_target_while_waiting = <YES or NO>`
+**Description**: Controls whether the calibration target is displayed while the system is waiting for a fixation. Default is NO.
+**Example**: `show_cal_target_while_waiting = NO`
+
 ### `active_eye`
 **Description**: TYPE:  READ, WRITE, LASTRUN.INI Sets which eye is being tracked in monocular mode by default. Use "binocular_enabled" function to select binocular tracking. <camera ID> can be a name or number: 1 or LEFT 3 or RIGHT
 **Example**: `active_eye = RIGHT`
@@ -594,6 +799,31 @@ Ordering for points in bi-cubic ("HV13", 13 pt) cal. Point order:
 ### `camera_color_ramp`
 **Description**: Sets up camera image color sets. <ramp>: 0=greyscale, 1=pupil threshold, 2=CR threshold NOTE: ramp values are given as fraction of blk->wht range for red, green, and blue components. <rm>, <gm>, <bm> = range for ramp as fraction of blk->wht range <ra>, <ga>, <ba> = base brightness of darkest color in ramp Color component = (fraction of ramp)*(range) + (base)
 **Example**: `camera_color_ramp 2, 0.000, 0.00, 0.400, 0.620, 0.400, 0.620`
+
+### `camera_rotmirror_enable`
+**Syntax**: `camera_rotmirror_enable <ON or OFF>`
+**Description**: Enables the camera image rotation and mirror controls in the Camera Setup screen. When ON, the rotation and vertical flip buttons are displayed and functional. Required for configurations where the camera sensor is not in the standard orientation.
+**Example**: `camera_rotmirror_enable ON`
+
+### `camera_rotmirror_angle`
+**Syntax**: `camera_rotmirror_angle <degrees>`
+**Description**: Sets the initial camera image rotation angle in degrees for the Camera Setup screen rotation control.
+**Example**: `camera_rotmirror_angle 0`
+
+### `camera_rotmirror_angstep`
+**Syntax**: `camera_rotmirror_angstep <degrees>`
+**Description**: Sets the step size in degrees for each press of the camera rotation button in the Camera Setup screen.
+**Example**: `camera_rotmirror_angstep 90`
+
+### `camera_rotmirror_mirror`
+**Syntax**: `camera_rotmirror_mirror <YES or NO>`
+**Description**: Sets the initial state of the vertical mirror (flip) for the camera image in the Camera Setup screen.
+**Example**: `camera_rotmirror_mirror YES`
+
+### `camera_sensor_limits`
+**Syntax**: `camera_sensor_limits <left> <top> <width> <height> <flags>`
+**Description**: Specifies the active area of the camera sensor. Used to crop or limit the region of the sensor that is read. Values are in sensor pixel coordinates.
+**Example**: `camera_sensor_limits 0 8 2048 2048 0`
 
 ### `cl_edf_identifier`
 **Description**: Specifies the EDF file identifier that is used by applications like edf2asc to determine the EDF file type DO NOT CHANGE THIS VALUE, OR YOUR EDF FILES WILL NOT BE READABLE Default Value: "SR_RESEARCH_COMBFILE"
@@ -630,6 +860,38 @@ Ordering for points in bi-cubic ("HV13", 13 pt) cal. Point order:
 **Description**: New camera options have been added, including allowing image data to be sent in any mode.  A new image type (4) has been added with enhanced compression for this purpose. In addition, cross-hair data has been packed into the PALDATA structure.  NOTE: the color of the pupil-limit box has been changed from green to blue as the new compression only handles 128 colors. This command sets whether cross-hairs will appear on the image sent over the link. These may be turned off if the cross-hairs are to be drawn on the display PC. (This is automatically done by selecting image mode 5). However, these must usually be turned on for older API program compatibility.
 **Example**: `draw_link_crosshairs = ON`
 
+### `elcl_camera_orientation`
+**Syntax**: `elcl_camera_orientation = <angle> <yflip> [<angle> <yflip>]`
+**Description**: Specifies camera rotation and whether a vertical mirror is used. The first pair of values applies to monocular mode; the optional second pair applies to binocular mode. `<angle>`: rotation of the camera sensor in degrees. `<yflip>`: whether the camera image is vertically flipped (0 = no flip, 1 = flip). This parameter is set by the configuration profile (e.g., BTABLER.INI) and must match the physical camera mounting. It directly affects how raw camera image coordinates are transformed before gaze computation. Incorrect values will rotate the internal coordinate frame relative to reality, affecting the P-CR to HREF conversion. The value is not a clean multiple of 90 for some mount configurations (e.g., 142 for Desktop Mount with illuminator on the right side).
+**Example**: `elcl_camera_orientation = 142 0`
+
+**Typical values by configuration**:
+
+| Config | Value | Mount Type |
+|--------|-------|------------|
+| BTABLER | 142 0 | Desktop, illuminator right, binoc/monoc |
+| BTABLEC | 180 0 | Desktop, illuminator center, binoc/monoc |
+| BTOWER | 0 1 | Tower mount, binoc/monoc |
+| RTABLER | 180 0 | Remote desktop, illuminator right |
+| RTABLEC | 180 0 | Remote desktop, illuminator center |
+| BLRR | 142 1 | Long range, binoc |
+| TOWER | 0 0 | Tower mount, monoc |
+
+### `elcl_camera_configuration`
+**Syntax**: `elcl_camera_configuration = <split_binoc> <slider>`
+**Description**: Describes camera mounting and binocular configuration. `<split_binoc>`: YES/NO, enables split-screen binocular mode (camera image must be rotated for this to function properly). `<slider>`: YES/NO, enables moveable-camera side detection (tower mount only).
+**Example**: `elcl_camera_configuration = YES NO`
+
+### `camera_to_eye_distance`
+**Syntax**: `camera_to_eye_distance = <distance in mm>`
+**Description**: Sets the expected median eye-to-camera distance in millimetres. Used for precalculating internal constants and mouse simulation. Typical default is 600 mm for desktop configurations.
+**Example**: `camera_to_eye_distance = 600`
+
+### `camera_lens_focal_length`
+**Syntax**: `camera_lens_focal_length = <focal length in mm>`
+**Description**: Focal length of the camera lens in millimetres. Note that the effective focal length may be slightly greater than lens specifications due to optical differences at infrared wavelengths. Typical values: 16 mm, 25 mm, or 35 mm depending on the mount and lens configuration.
+**Example**: `camera_lens_focal_length = 38`
+
 ### `elcl_hold_if_no_corneal`
 **Description**: <switch>: ON or OFF If true, eye window is frozen until both pupil and CR are present. Default Value: OFF
 **Example**: `elcl_hold_if_no_corneal = OFF`
@@ -645,6 +907,61 @@ Ordering for points in bi-cubic ("HV13", 13 pt) cal. Point order:
 ### `elcl_use_pcr_matching`
 **Description**: <switch>: ON or OFF Selects enhanced pupil-CR matching during pupil identification. If used, pupil and CR are selected as best matching pair. This can be used even if CR is not being used for tracking. Default Value: ON
 **Example**: `elcl_use_pcr_matching = ON`
+
+### `elcl_corneal_search_shape`
+**Syntax**: `elcl_corneal_search_shape <params...>`
+**Description**: Defines the shape parameters for corneal reflection (CR) search region. Controls the geometric constraints used when searching for the CR in the camera image. Parameters define aspect ratios, size limits, and shape factors for the CR search algorithm.
+**Example**: `elcl_corneal_search_shape 3.5, 3.5, 0.40, 0.40, 0.45, 1.0, 0.5, 2.0`
+
+### `elcl_corneal_select_shape`
+**Syntax**: `elcl_corneal_select_shape <params...>`
+**Description**: Defines the shape parameters for corneal reflection (CR) selection. Controls how a detected CR candidate is validated based on its geometric properties. Tighter constraints than the search shape to confirm a valid CR.
+**Example**: `elcl_corneal_select_shape 3.5, 3.5, 0.30, 0.30, 0.45, 1.0, 0.5, 2.0`
+
+### `elcl_corneal_select_size`
+**Syntax**: `elcl_corneal_select_size = <min_w>, <max_w>, <min_h>, <max_h>, <min_area>, <max_area>`
+**Description**: Sets the size limits for corneal reflection (CR) selection. Defines minimum and maximum width, height, and area constraints for accepting a CR candidate. Values are in camera sensor pixels.
+**Example**: `elcl_corneal_select_size = 5, 30, 5, 30, 20, 1000`
+
+### `elcl_pupil_search_shape`
+**Syntax**: `elcl_pupil_search_shape <params...>`
+**Description**: Defines the shape parameters for pupil search region. Controls the geometric constraints used when searching for the pupil in the camera image. Parameters define aspect ratios, size limits, and shape factors for the pupil search algorithm.
+**Example**: `elcl_pupil_search_shape 1.8, 2.0, 0.25, 0.25, 0.50, 0.9, 0.5, 2.0`
+
+### `elcl_pupil_select_shape`
+**Syntax**: `elcl_pupil_select_shape <params...>`
+**Description**: Defines the shape parameters for pupil selection. Controls how a detected pupil candidate is validated based on its geometric properties.
+**Example**: `elcl_pupil_select_shape 1.8, 2.5, 0.25, 0.25, 0.50, 0.9, 0.5, 2.0`
+
+### `elcl_pupil_select_size`
+**Syntax**: `elcl_pupil_select_size = <min_w>, <max_w>, <min_h>, <max_h>, <min_area>, <max_area>`
+**Description**: Sets the size limits for pupil selection. Defines minimum and maximum width, height, and area constraints for accepting a pupil candidate. Values are in camera sensor pixels.
+**Example**: `elcl_pupil_select_size = 15, 140, 15, 140, 100, 20000`
+
+### `elcl_define_tt_powers`
+**Syntax**: `elcl_define_tt_powers <name1>,<pwr1>,<ctrl1> <name2>,<pwr2>,<ctrl2> ...`
+**Description**: Defines control settings and names for ELCL TT (illuminator) power levels. Level 0 is always OFF, so settings start with level 1. Level 1 should be the default power level.
+**Example**: `elcl_define_tt_powers 100%,3,3  75%,3,0  50%,1,0`
+
+### `elcl_tt_power`
+**Syntax**: `elcl_tt_power <level>`
+**Description**: Sets ELCL TT illuminator power level. The index corresponds to levels defined by `elcl_define_tt_powers`. Index 0 is OFF. Default levels: 1 = 100%, 2 = 75%, 3 = 50%.
+**Example**: `elcl_tt_power 2`
+
+### `elcl_detect_tt`
+**Syntax**: `elcl_detect_tt <tt_ini_file> <non_tt_ini_file> ...`
+**Description**: Detects if a power-settable ELCL TT mount is connected. If so, loads the first INI file. If not, loads the second INI file (if given). Used during startup to select the appropriate configuration based on connected hardware.
+**Example**: `elcl_detect_tt "dscfg.ini" "tscfg.ini" "docfg.ini" "tocfg.ini"`
+
+### `elcl_select_configuration`
+**Syntax**: `elcl_select_configuration <config_name>`
+**Description**: Loads the INI file and highlights the button associated with the given configuration name. If the named configuration has not been defined, no change is made and an error is reported. Used to switch between mount configurations (e.g., BTABLER, MTABLEC, RTABLER).
+**Example**: `elcl_select_configuration BTABLER`
+
+### `elcl_tracking_init`
+**Syntax**: `elcl_tracking_init <x1> <y1> <x2> <y2>`
+**Description**: Sets the initial tracking window coordinates in camera sensor pixels. Defines the region of interest for initial pupil detection at startup. Saved in lastrun.ini.
+**Example**: `elcl_tracking_init 780 912 1424 1116`
 
 ### `enable_camera_position_detect`
 **Description**: <switch>: TRUE or FALSE Allows camera position detect on click/auto-threshold in setup mode
@@ -670,6 +987,51 @@ Ordering for points in bi-cubic ("HV13", 13 pt) cal. Point order:
 **Description**: Hides "Pupil" mode button on Camera Setup screen Pupil Only mode should only be used in EyeLink 1000 when participants head is completely fixed. Default Value: OFF
 **Example**: `force_corneal_reflection =TRUE`
 
+### `force_ellipse_fitter`
+**Syntax**: `force_ellipse_fitter <mode>`
+**Description**: Controls the ellipse fitting algorithm for pupil and CR detection. -1 = auto-detect (use ellipse fitter if available), 0 = disable, 1 = force enable. The ellipse fitter provides more accurate pupil boundary detection than the default centroid method.
+**Example**: `force_ellipse_fitter -1`
+
+### `use_ellipse_fitter`
+**Syntax**: `use_ellipse_fitter = <YES or NO>`
+**Description**: Enables or disables the ellipse fitter for pupil detection. Similar to `force_ellipse_fitter` but with a simpler YES/NO interface.
+**Example**: `use_ellipse_fitter = NO`
+
+### `display_ellipse`
+**Syntax**: `display_ellipse <TRUE or FALSE>`
+**Description**: Controls whether the fitted ellipse outline is displayed on the camera image in the Camera Setup screen. Useful for verifying ellipse fitter accuracy.
+**Example**: `display_ellipse TRUE`
+
+### `efit2_params`
+**Syntax**: `efit2_params <threshold> <min_area> <max_area> <param4> <param5> <param6> <param7> <param8>`
+**Description**: Parameters for the version 2 ellipse fitting algorithm. Controls the threshold, area limits, and fitting quality parameters for pupil boundary detection.
+**Example**: `efit2_params 0.85 400 1000 0 0 0.4 0.6 1`
+
+### `efit2_cr_clip`
+**Syntax**: `efit2_cr_clip <params...>`
+**Description**: Parameters controlling how the ellipse fitter handles corneal reflection (CR) clipping. Defines how the CR region is excluded from the pupil ellipse fit to prevent CR contamination of the pupil boundary.
+**Example**: `efit2_cr_clip 7 10 3 2`
+
+### `efit3_params`
+**Syntax**: `efit3_params <params...>`
+**Description**: Parameters for the version 3 ellipse fitting algorithm. Controls threshold ratios, quality bounds, and iteration limits for the enhanced pupil boundary detection.
+**Example**: `efit3_params 0.92 0.78 1.08 0.99 6 0.2 0`
+
+### `efit3_retrim_params`
+**Syntax**: `efit3_retrim_params <params...>`
+**Description**: Parameters controlling the retrimming step of the version 3 ellipse fitter. Adjusts how outlier pixels are removed from the ellipse boundary fit in successive iterations.
+**Example**: `efit3_retrim_params 0.15 0.1 0.1 3`
+
+### `use_efit3`
+**Syntax**: `use_efit3 <pupil_enable> <cr_enable>`
+**Description**: Enables the version 3 ellipse fitter separately for pupil and CR detection. First value controls pupil, second controls CR. 1 = enable, 0 = disable.
+**Example**: `use_efit3 1 0`
+
+### `large_offset_to_blink`
+**Syntax**: `large_offset_to_blink <enable> <threshold>`
+**Description**: When enabled, treats large sudden offsets in pupil position as blinks rather than saccades. The threshold defines the maximum acceptable offset before the sample is classified as a blink artifact.
+**Example**: `large_offset_to_blink 1 3.0`
+
 ### `force_elcl_mode`
 **Description**: <switch>: TRUE or FALSE Forces startup in ELCL mode Startup fails without hardware or -x option
 **Example**: `force_elcl_mode = TRUE`
@@ -689,6 +1051,21 @@ Ordering for points in bi-cubic ("HV13", 13 pt) cal. Point order:
 ### `heuristic_filter`
 **Description**: TYPE: Read, Write, lastrun.ini, MENU Can be used to set level of filtering on the link and analog output, and on file data.  An additional delay of 1 sample is added to link or analog data for each filter level. If an argument of <ON> is used, link filter level is set to 1 to match EyeLink I delays.  The file filter level is not changed unless two arguments are supplied.  The default file filter level is 2. 0 or OFF disables link filter 1 or ON sets filter to 1 (moderate filtering, 1 sample delay) 2 applies an extra level of filtering (2 sample delay)
 **Example**: `heuristic_filter 1 2`
+
+### `set_filter_levels`
+**Syntax**: `set_filter_levels <mode> <level>`
+**Description**: Sets the heuristic filter level for data filtering. `<mode>`: R (recording), L (link), or other mode identifier. `<level>`: filter level (0 = off, 1 = standard, 2 = extra, 3 = maximum). Applied to all mount-specific configurations.
+**Example**: `set_filter_levels R 3`
+
+### `set_autoexposure`
+**Syntax**: `set_autoexposure <params...>`
+**Description**: Configures the automatic exposure adjustment system. Controls target exposure levels, adjustment rates, and enable/disable for the camera autoexposure algorithm.
+**Example**: `set_autoexposure 2000 440 170 190 440 440 OFF 440 440 1.0`
+
+### `auto_exposure`
+**Syntax**: `auto_exposure <mode>`
+**Description**: Sets the autoexposure mode. 0 = manual exposure, other values select different autoexposure algorithms.
+**Example**: `auto_exposure 0`
 
 ### `image_from_setup_menu`
 **Description**: Allows Camera Setup menu to always have image sending turned on. This might have caused problems with EyeLink 1 apps, as "setup" and "image" modes would be confused by eyelink_current_mode(). Default is OFF.
@@ -750,6 +1127,26 @@ Ordering for points in bi-cubic ("HV13", 13 pt) cal. Point order:
 **Description**: READ, WRITE, MENU. LASTRUN.INI Sets the type of data used for pupil size.  The type can be a number, or a word (only first letter checked). The <ID_CODE> below is the pupil type (prescaler) field of link data. TYPE        TYPE CODE              ID_CODE   DATA area        AREA, NO, OFF, 0         1      area diameter    DIAMETER, YES, ON, 1   128      128*sqrt(area) width       WIDTH, 2                90      180*width height      HEIGHT, 3              180      180*height
 **Example**: `pupil_size_diameter = AREA`
 
+### `pupil_gproc_parameters`
+**Syntax**: `pupil_gproc_parameters <params...>`
+**Description**: Image processing parameters for pupil detection. Controls the preprocessing applied to the camera image before pupil thresholding and centroid/ellipse fitting.
+**Example**: `pupil_gproc_parameters 3 70 10`
+
+### `cr_gproc_parameters`
+**Syntax**: `cr_gproc_parameters = <params...>`
+**Description**: Image processing parameters for corneal reflection (CR) detection. Controls the preprocessing applied to the camera image before CR thresholding and detection.
+**Example**: `cr_gproc_parameters = 8 500`
+
+### `pupil_size_warn_size`
+**Syntax**: `pupil_size_warn_size <min> <max>`
+**Description**: Pupil size range (in camera sensor units) for generating warnings. If the detected pupil size falls outside this range, a warning is displayed on the Host PC.
+**Example**: `pupil_size_warn_size 15 120`
+
+### `max_pupil_cr_mm`
+**Syntax**: `max_pupil_cr_mm = <distance_mm>`
+**Description**: Maximum allowed distance in millimetres between the pupil center and the corneal reflection. Used in remote mode to reject invalid P-CR measurements that are physically implausible.
+**Example**: `max_pupil_cr_mm = 7`
+
 ### `rec_plot_colors`
 **Description**: Sets colors of traces in data plotting. Each of the 4 traces (LX, LY, RX, RY) can be changes separately.  The color of traces where overlaps occur may also be set. Finally, the background of the gain and offset edit boxes can be modified. Default Values: 255,210,227,192, 191, 15,4,15,4
 **Example**: `rec_plot_colors = 255,95,210,192, 191, 15,4,15,4`
@@ -761,6 +1158,26 @@ Ordering for points in bi-cubic ("HV13", 13 pt) cal. Point order:
 ### `rec_plot_simple_offset`
 **Description**: <switch>: ON or OFF Prevents offset from changing when gain is changed via the arrow buttons.  NOTE: this will cause the plot to shift when gain is adjusted. Default Value: OFF
 **Example**: `rec_plot_simple_offset = OFF`
+
+### `rec_plot_enabled`
+**Syntax**: `rec_plot_enabled = <ON or OFF>`
+**Description**: Controls whether the real-time data plot (vs. gaze cursor) is displayed during recording on the Host PC.
+**Example**: `rec_plot_enabled = ON`
+
+### `rec_plot_data`
+**Syntax**: `rec_plot_data = <data_type>`
+**Description**: Selects what the recording plot displays. RAW and ANALOG are coupled to output channels. GAZE and HREF plot calibrated data and can be vertically zoomed. ANGLE displays HREF as angle = atan(HREF/15000). Options: RAW, GAZE, HREF, ANGLE, ANALOG.
+**Example**: `rec_plot_data = GAZE`
+
+### `rec_plot_speed`
+**Syntax**: `rec_plot_speed = <speed_index>`
+**Description**: Sets the plotting speed (sweep rate). 0 = 4 ms/column (2 sec/sweep), 1 = 8 ms/column (4 sec/sweep), 2 = 12 ms/column (6 sec/sweep), 3 = 20 ms/column (10 sec/sweep), 4 = 30 ms/column (15 sec/sweep), 5 = 40 ms/column (20 sec/sweep), 6 = 60 ms/column (30 sec/sweep), 7 = 90 ms/column (45 sec/sweep), 8 = 120 ms/column (60 sec/sweep).
+**Example**: `rec_plot_speed = 2`
+
+### `rec_plot_always_collect`
+**Syntax**: `rec_plot_always_collect = <YES or NO>`
+**Description**: Controls whether plot data is collected even when the gaze cursor is active. If ON, data appears as history when switching to plot mode. If OFF, data is cleared when switching to plot mode. Data is always cleared at entry to record mode.
+**Example**: `rec_plot_always_collect = NO`
 
 ### `recording_parse_type`
 **Description**: Data type used to compute velocity for parsing of eye movements during recording. Both gaze and head-referenced data are available for other statistics.  Almost always left to GAZE. <type>: GAZE or HREF.
@@ -781,6 +1198,16 @@ Ordering for points in bi-cubic ("HV13", 13 pt) cal. Point order:
 ### `search_limits_size`
 **Description**: <width> <height>: in pixels Specifies the size of the search limits box
 **Example**: `search_limits_size = 500 500`
+
+### `search_limits_rect_binoc`
+**Syntax**: `search_limits_rect_binoc = <Lleft>,<Ltop>,<Lright>,<Lbottom> <Rleft>,<Rtop>,<Rright>,<Rbottom>`
+**Description**: Search limits rectangles for binocular modes. Separate rectangles for left and right eye search regions. Coordinates are in camera sensor pixels. Valid range: x=32..1263, y=48..971. Set to -1 to indicate undefined.
+**Example**: `search_limits_rect_binoc = 531,664,1028,1161  1176,867,1673,1364`
+
+### `binoc_intereye_ref`
+**Syntax**: `binoc_intereye_ref <distance> <angle> <x> <y>`
+**Description**: Sets the startup inter-eye difference reference for binocular tracking. Used for recovery if one eye is lost. `<distance>`: distance between eyes in camera pixels. `<angle>`: angle of line connecting eyes in degrees (0 = horizontal). `<x>`, `<y>`: last recorded difference (R-L) in unrotated camera pixels.
+**Example**: `binoc_intereye_ref 752 3 737 45`
 
 ### `select_eye_after_validation`
 **Description**: TYPE:  READ, WRITE Controls whether the best eye is automatically selected as the default after validation.  If NO, binocular mode is kept by default. This is automatically disabled in scene camera mode.
@@ -1067,6 +1494,21 @@ Configuration abbreviations and their meanings:
 **Description**: READ-ONLY. Returns the full name of the current or last EDF file opened.
 **Example**: `data_file_name`
 
+### `compress_edf_files`
+**Syntax**: `compress_edf_files = <YES or NO>`
+**Description**: Sets whether EDF files will be compressed. Playback is not available when compression is enabled. Cannot be changed while a file is open.
+**Example**: `compress_edf_files = NO`
+
+### `long_filename_enabled`
+**Syntax**: `long_filename_enabled = <YES or NO>`
+**Description**: Enables support for long filenames in EDF file naming on the Host PC.
+**Example**: `long_filename_enabled = NO`
+
+### `raw_data_out_select`
+**Syntax**: `raw_data_out_select = <mode>`
+**Description**: Determines what data goes into the px and py sample fields. Default is 0 (pupil). Negative values replace CR or P-CR data with pupil data in pupil-only tracking mode. RAW_AUTOSLIP is a common setting for automatic selection.
+**Example**: `raw_data_out_select = RAW_AUTOSLIP`
+
 ### `call_setup_menu_mode`
 **Syntax**: `call_setup_menu_mode`
 **Description**: Designed for use from user menus--these execute the mode, then on exit return to the current mode (or menu).
@@ -1076,6 +1518,16 @@ Configuration abbreviations and their meanings:
 **Syntax**: `call_option_menu_mode`
 **Description**: Designed for use from user menus--these execute the mode, then on exit return to the current mode (or menu).
 **Example**: `call_option_menu_mode`
+
+### `create_user_menu`
+**Syntax**: `create_user_menu <menu_number> <title>`
+**Description**: Creates a user-defined menu, numbered from 1 to 4. User menu 1 is called by `record_abort_handler()` on record abort (CTRL-ALT-A). Menu items are added with `add_user_menu_item`. The menu stays active until the tracker switches to another mode.
+**Example**: `create_user_menu 1 "Trial Aborted"`
+
+### `add_user_menu_item`
+**Syntax**: `add_user_menu_item <button_text> <description> <key_spec> <code> [<command>]`
+**Description**: Adds an item to a user-defined menu created with `create_user_menu`. `<button_text>`: text displayed on the menu button. `<description>`: longer description. `<key_spec>`: keyboard shortcut. `<code>`: numeric code sent to the Display PC when selected. `<command>`: optional tracker command to execute.
+**Example**: `add_user_menu_item " S " "Setup (Calibrate, camera setup)" s 1 "call_setup_menu_mode"`
 
 ### `display_user_menu`
 **Syntax**: `display_user_menu <menu number>`
@@ -1350,6 +1802,61 @@ Configuration abbreviations and their meanings:
 **Description**: Allows tracker to display the exposure settings on the camera setup screen.
 **Example**: `show_exposure 1`
 
+### `simulate_head_camera`
+**Syntax**: `simulate_head_camera = <YES or NO>`
+**Description**: Can be used to turn off head tracking if not used. Set to YES to disable head tracking, NO to enable head tracking. Should be set before calibration.
+**Example**: `simulate_head_camera = YES`
+
+### `host_address`
+**Syntax**: `host_address = <ip_address>, <netmask>`
+**Description**: Sets the IP address and network mask for the EyeLink Host PC. Found in EYENET.INI.
+**Example**: `host_address = 100.1.1.1, 255.255.255.0`
+
+### `eyelink_port`
+**Syntax**: `eyelink_port = <port_number>`
+**Description**: Sets the UDP port used for EyeLink network communication between the Host PC and Display PC. Default is 589.
+**Example**: `eyelink_port = 589`
+
+### `host_ip`
+**Syntax**: `HOST_IP = <ip_address>`
+**Description**: Host PC IP address in the network configuration files (netconfig.ini).
+**Example**: `HOST_IP = 100.1.1.1`
+
+### `host_netmask`
+**Syntax**: `HOST_NETMASK = <netmask>`
+**Description**: Host PC network mask in the network configuration files.
+**Example**: `HOST_NETMASK = 255.255.255.0`
+
+### `wifi_ssid_suffix`
+**Syntax**: `WIFI_SSID_SUFFIX = <suffix>`
+**Description**: Suffix appended to the WiFi SSID for EyeLink wireless connectivity. Empty by default.
+**Example**: `WIFI_SSID_SUFFIX =`
+
+### `wifi_passphrase`
+**Syntax**: `WIFI_PASSPHRASE = <passphrase>`
+**Description**: WiFi passphrase for EyeLink wireless connectivity.
+**Example**: `WIFI_PASSPHRASE = eyelink3`
+
+### `enable_legacy_display_ip`
+**Syntax**: `ENABLE_LEGACY_DISPLAY_IP = <0 or 1>`
+**Description**: Enables legacy Display PC IP address assignment. 0 = disabled, 1 = enabled.
+**Example**: `ENABLE_LEGACY_DISPLAY_IP = 0`
+
+### `disable_ethernet_dhcpd`
+**Syntax**: `DISABLE_ETHERNET_DHCPD = <0 or 1>`
+**Description**: Disables the DHCP server on the EyeLink Host PC's ethernet interface. 0 = DHCP enabled, 1 = DHCP disabled.
+**Example**: `DISABLE_ETHERNET_DHCPD = 1`
+
+### `enable_ssid_broadcast`
+**Syntax**: `ENABLE_SSID_BROADCAST = <0 or 1>`
+**Description**: Controls whether the EyeLink Host PC broadcasts its WiFi SSID. 0 = hidden, 1 = broadcast.
+**Example**: `ENABLE_SSID_BROADCAST = 1`
+
+### `disable_wifi`
+**Syntax**: `DISABLE_WIFI = <0 or 1>`
+**Description**: Disables WiFi on the EyeLink Host PC. 0 = WiFi enabled, 1 = WiFi disabled.
+**Example**: `DISABLE_WIFI = 1`
+
 ### `video_overlay_available`
 **Syntax**: `video_overlay_available = <YES or NO>`
 **Description**: Sets whether EyeLink is configured for video overlay. In particular, "NO" hides the Video Overlay buttons in the Set Options screen. If not set, this defaults to NO, so the vidovl.ini file can be excluded from the distribution.
@@ -1479,4 +1986,87 @@ Configuration abbreviations and their meanings:
 **Syntax**: `sample_rate = <rate>`
 **Description**: Sampling rate of the eye tracker (in Hz). Can only be changed in offline and camera setup modes. If changed in offline mode, may switch to camera setup mode. Common values: 250, 500, 1000, 2000 Hz. Default: 1000 Hz.
 **Example**: `sample_rate = 1000`
+
+### `add_configutation_entry`
+**Syntax**: `add_configutation_entry <description> <ini_file> <config_id>`
+**Description**: Adds an entry to the Configuration selection menu in the EyeLink Set Options screen. Each entry maps a human-readable description to an INI file and configuration ID. Note: the spelling "configutation" (missing an 'r') is as used in the actual EyeLink INI files. The description prefix "!" marks the entry as the primary/default for that configuration type.
+**Example**: `add_configutation_entry "!Desktop ~ Stabilized Head ~ Monocular ~ 35mm lens~ " "mtablec.ini" "MTABLER"`
+
 ---
+
+## Coordinate Systems
+
+### HREF (Head-Referenced Eye Angle)
+
+HREF is a head-referenced angular coordinate system used internally by the EyeLink to represent eye rotation. It is an intermediate representation between raw camera data and screen gaze coordinates.
+
+#### Geometric Model
+
+HREF coordinates define a point on a virtual flat plane at distance f = 15000 units from the eye. The (x, y) position on this plane represents where the line of sight intersects it. Values are reported in integer units, with approximately 260 or more units per visual degree.
+
+The HREF (0, 0) origin approximately corresponds to the gaze direction through the camera at the time of calibration. This origin is arbitrary and changes between calibrations if the relative position of the camera and eye changes.
+
+#### Gaze Conversion Pipeline
+
+The EyeLink converts raw camera data to screen gaze coordinates through HREF as an intermediate step:
+
+```
+Raw P-CR (camera image pixels) --> HREF (head-referenced angular) --> Screen (gaze pixels)
+```
+
+**Stage 1: P-CR to HREF** - The tracker computes the Pupil minus Corneal Reflection (P-CR) vector from the camera image and converts it to HREF angular coordinates. This conversion uses `elcl_camera_orientation` to account for camera rotation, and `camera_to_eye_distance` / `camera_lens_focal_length` for the geometric eye model. The exact math is internal to the tracker firmware.
+
+**Stage 2: HREF to Screen** - During calibration, the EyeLink fits a biquadratic polynomial mapping from HREF to screen coordinates:
+
+```
+X_screen = a + b*x + c*y + d*x^2 + e*y^2
+Y_screen = f + g*x + h*y + i*x^2 + j*y^2
+```
+
+For 9-point and 13-point calibrations, per-quadrant corner correction is also applied:
+
+```
+X_final = X_poly + c_x * X_poly * Y_poly
+Y_final = Y_poly + c_y * X_poly * Y_poly
+```
+
+The polynomial and corner correction coefficients are recorded in the EDF/ASC file as `!CAL` messages after each calibration.
+
+#### HREF and Camera Position
+
+The HREF coordinate system is tied to the camera's viewpoint at calibration time. SR Research states:
+
+> "The gaze vector that projects through the HREF origin is approximately through the camera from a vantage point that is maintained during calibration. Calibrating in cases of different relative positions between the camera and the eye would then result in different absolute head-relative gaze vectors that produce an intersection with the origin of the HREF plane."
+
+This means that if the camera is physically moved or rotated after the configuration is set (without updating `elcl_camera_orientation` or re-calibrating), the HREF coordinate system becomes misaligned with the actual viewing geometry. The calibration polynomial may not fully compensate for this, leading to position-dependent spatial accuracy errors, particularly at screen edges and corners.
+
+#### Pixels Per Degree from HREF
+
+The instantaneous angular resolution (pixels per degree) can be computed from HREF coordinates:
+
+```
+rx = (15000^2 + x^2 + y^2) / sqrt(15000^2 + y^2) / 57.2958
+ry = (15000^2 + x^2 + y^2) / sqrt(15000^2 + x^2) / 57.2958
+```
+
+Where x and y are the current HREF coordinates and 57.2958 converts radians to degrees.
+
+#### Recording HREF Data
+
+HREF data can be included in EDF files and link samples using the `file_sample_data` and `link_sample_data` commands by including the `HREF` flag:
+
+```
+file_sample_data = LEFT,RIGHT,GAZE,GAZERES,PUPIL,HREF,AREA,STATUS
+link_sample_data = LEFT,RIGHT,GAZE,HREF,GAZERES,AREA,STATUS
+```
+
+The parser can also operate in HREF mode via `recording_parse_type = HREF`, though GAZE mode is almost always used.
+
+#### Coordinate System Summary
+
+| System | Typical Range | Units | Origin |
+|--------|---------------|-------|--------|
+| Raw Pupil | Camera sensor pixels | Pixels | Camera image top-left |
+| HREF | -100 to +100 (X), -200 to +200 (Y) | Angular (~260 units/degree) | Gaze direction through camera |
+| Screen (internal) | -2600 to +2600 (X), -2000 to +2000 (Y) | ~4.5 per pixel | Screen center |
+| Gaze (pixels) | 0 to width (X), 0 to height (Y) | Pixels | Display top-left |
