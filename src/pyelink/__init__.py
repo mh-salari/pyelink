@@ -44,13 +44,13 @@ Attribution:
 
 """
 
+from importlib.metadata import version as _get_version
+
 from .audio import AudioPlayer, get_player, play_done_beep, play_error_beep, play_target_beep
 from .calibration import SUPPORTED_BACKENDS, create_calibration, get_available_backends, get_backend
 from .core import EyeLink, Settings
 from .utils import RingBuffer
 from .version import check_python_version, get_recommended_backends
-
-from importlib.metadata import version as _get_version
 
 __version__ = _get_version("pyelink")
 __author__ = "Mohammadhossein Salari"
