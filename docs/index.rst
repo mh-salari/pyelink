@@ -19,8 +19,8 @@ PyeLink Documentation
    :target: https://pyelink.readthedocs.io/
    :alt: Documentation
 
-.. |DOI| image:: https://img.shields.io/badge/DOI-TODO-blue
-   :target: https://doi.org/TODO
+.. |DOI| image:: https://img.shields.io/badge/DOI-coming_soon-blue
+   :target: #
    :alt: DOI
 
 **PyeLink** is a modern Python wrapper for SR Research EyeLink eye trackers with
@@ -50,5 +50,14 @@ command for advanced configurations.
    eyelink_commands_reference
 
 ----
+
+.. note::
+
+   If you use PyeLink in your research, please cite:
+
+   Salari, M., Nyström, M., Niehorster, D. C., & Bednarik, R. (2026).
+   PyeLink and SyeLink: Open-source Python tools for low-level EyeLink experiment control and data parsing.
+   In *Proceedings of the 2026 Eye Tracking Research & Applications (ETRA 2026) Late-Breaking Work*. ACM.
+   *[Accepted; DOI forthcoming]*
 
 | Author: `Mohammadhossein Salari <https://mh-salari.ir>`_
