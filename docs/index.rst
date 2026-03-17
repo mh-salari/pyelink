@@ -60,4 +60,15 @@ command for advanced configurations.
    In *Proceedings of the 2026 Eye Tracking Research & Applications (ETRA 2026) Late-Breaking Work*. ACM.
    *[Accepted; DOI forthcoming]*
 
+.. note::
+
+   This project has received funding from the European Union's Horizon Europe
+   research and innovation funding program under grant agreement No 101072410,
+   Eyes4ICU project.
+
+.. image:: ../resources/Funded_by_EU_Eyes4ICU.png
+   :alt: Funded by EU Eyes4ICU
+   :align: center
+   :width: 500px
+
 | Author: `Mohammadhossein Salari <https://mh-salari.ir>`_
