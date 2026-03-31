@@ -4,7 +4,7 @@
 [![Downloads](https://static.pepy.tech/badge/pyelink)](https://pepy.tech/project/pyelink)
 [![License](https://img.shields.io/pypi/l/pyelink)](https://github.com/mh-salari/pyelink/blob/main/LICENSE)
 [![Documentation](https://readthedocs.org/projects/pyelink/badge/?version=latest)](https://pyelink.readthedocs.io/)
-[![DOI](https://img.shields.io/badge/DOI-coming_soon-blue)](#citation)
+[![DOI](https://img.shields.io/badge/DOI-10.1145%2F3797246.3805844-blue)](https://doi.org/10.1145/3797246.3805844)
 
 A modern Python wrapper for SR Research EyeLink eye trackers with multi-backend display support (pygame, PsychoPy, pyglet).
 
@@ -165,13 +165,12 @@ This package is based on code originally developed by:
 
 ## Citation
 
-This work has been accepted for publication at ETRA 2026. The DOI will be added when the proceedings are published.
-
 **Cite as:**
 ```
 Salari, M., Nyström, M., Niehorster, D. C., & Bednarik, R. (2026).
 PyeLink and SyeLink: Open-source Python tools for low-level EyeLink experiment control and data parsing.
 In Proceedings of the 2026 Eye Tracking Research & Applications (ETRA 2026) Late-Breaking Work. ACM.
+DOI: 10.1145/3797246.3805844
 ```
 
 ## Acknowledgments
