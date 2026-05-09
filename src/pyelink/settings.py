@@ -135,6 +135,22 @@ class Settings(BaseModel):
         """,
     )
 
+    log_calibration_target_messages: bool = Field(
+        default=False,
+        description="""Send TARGET / TARGET_ERASED messages to the EyeLink whenever
+        a calibration or validation target is drawn or erased.
+
+        - False (default): no extra messages; existing behaviour.
+        - True: after each target draw the backend calls
+          ``tracker.send_message("TARGET x=<x> y=<y>")``, and after each
+          erase ``tracker.send_message("TARGET_ERASED x=<x> y=<y>")``. Each
+          message is stored in the EDF with a host-clock timestamp, allowing
+          any out-of-EDF data stream to be aligned to the exact target shown.
+
+        Coordinates are EyeLink screen coordinates (top-left origin).
+        """,
+    )
+
     pacing_interval: int = Field(
         default=1000,
         ge=500,

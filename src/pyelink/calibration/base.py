@@ -37,6 +37,7 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
         self.settings = settings
         self.sres = settings.screen_res
         self.mode = mode
+        self._last_target_xy: tuple[int, int] | None = None
         self.set_tracker(tracker)
 
     def set_tracker(self, tracker: object) -> None:
@@ -96,7 +97,43 @@ class CalibrationDisplay(pylink.EyeLinkCustomDisplay, ABC):
             Coordinates are in EyeLink space (top-left origin, positive Y down).
             Backends must convert to their native coordinate system.
 
+            Backend implementations should call ``_log_target_drawn(x, y)``
+            after the display has been updated, so that an EDF message is
+            emitted when ``settings.log_calibration_target_messages`` is True.
+
         """
+
+    def _log_target_drawn(self, x: float, y: float) -> None:
+        """Emit a ``TARGET x=<x> y=<y>`` message to the EyeLink.
+
+        Gated by ``settings.log_calibration_target_messages`` (default False).
+        Backends should call this from ``draw_cal_target`` after the display
+        flip so the message timestamp lines up with the visible target. The
+        check is cheap when the flag is off.
+
+        Also stashes (x, y) on the instance so a paired ``TARGET_ERASED``
+        message can carry the same coordinates.
+        """
+        self._last_target_xy = (int(x), int(y))
+        if not self.settings.log_calibration_target_messages:
+            return
+        self.tracker.send_message(f"TARGET x={int(x)} y={int(y)}")
+
+    def _log_target_erased(self) -> None:
+        """Emit a 'TARGET_ERASED x=<x> y=<y>' message to the EyeLink.
+
+        Coordinates are taken from the most recent ``_log_target_drawn``
+        call, so a downstream parser can pair the draw/erase events. Backends
+        should call this from ``erase_cal_target`` after the display flip.
+        Gated by ``settings.log_calibration_target_messages`` (default False).
+        """
+        if not self.settings.log_calibration_target_messages:
+            return
+        if self._last_target_xy is None:
+            self.tracker.send_message("TARGET_ERASED")
+        else:
+            x, y = self._last_target_xy
+            self.tracker.send_message(f"TARGET_ERASED x={x} y={y}")
 
     @abstractmethod
     def erase_cal_target(self) -> None:

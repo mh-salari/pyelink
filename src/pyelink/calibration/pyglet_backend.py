@@ -132,6 +132,7 @@ class PygletCalibrationDisplay(CalibrationDisplay):
         """Remove calibration target from display."""
         self._clear_window()
         self.window.flip()
+        self._log_target_erased()
 
     def draw_cal_target(self, x: float, y: float) -> None:
         """Draw calibration target at position (x, y).
@@ -142,12 +143,13 @@ class PygletCalibrationDisplay(CalibrationDisplay):
 
         """
         # Convert EyeLink coordinates (top-left origin) to pyglet (bottom-left origin)
-        x = int(x)
-        y = self.height - int(y)
+        pyglet_x = int(x)
+        pyglet_y = self.height - int(y)
 
         self._clear_window()
-        self._draw_target(x, y)
+        self._draw_target(pyglet_x, pyglet_y)
         self.window.flip()
+        self._log_target_drawn(x, y)
 
     def get_input_key(self) -> list:
         """Get keyboard input and convert to pylink key codes.

@@ -107,6 +107,7 @@ class PygameCalibrationDisplay(CalibrationDisplay):
         """Remove calibration target from display."""
         self.window.fill(self.backcolor)
         pygame.display.flip()
+        self._log_target_erased()
 
     def draw_cal_target(self, x: float, y: float) -> None:
         """Draw calibration target at position (x, y).
@@ -116,11 +117,12 @@ class PygameCalibrationDisplay(CalibrationDisplay):
             y: Y coordinate in EyeLink coordinates (top-left origin)
 
         """
-        x, y = int(x), int(y)
+        ix, iy = int(x), int(y)
         self.window.fill(self.backcolor)
-        img_rect = self.target_image.get_rect(center=(x, y))
+        img_rect = self.target_image.get_rect(center=(ix, iy))
         self.window.blit(self.target_image, img_rect)
         pygame.display.flip()
+        self._log_target_drawn(x, y)
 
     def get_input_key(self) -> list:
         """Get keyboard input and convert to pylink key codes.

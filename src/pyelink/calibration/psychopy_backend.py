@@ -109,6 +109,7 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
     def erase_cal_target(self) -> None:
         """Remove calibration target from display."""
         self.window.flip()
+        self._log_target_erased()
 
     def draw_cal_target(self, x: float, y: float) -> None:
         """Draw calibration target at position (x, y).
@@ -119,12 +120,13 @@ class PsychopyCalibrationDisplay(CalibrationDisplay):
 
         """
         # Convert to PsychoPy coordinates (center origin, positive Y up)
-        x -= self.sres[0] / 2
-        y = -(y - (self.sres[1] / 2))
+        psy_x = x - self.sres[0] / 2
+        psy_y = -(y - (self.sres[1] / 2))
 
-        self.target_image.pos = (x, y)
+        self.target_image.pos = (psy_x, psy_y)
         self.target_image.draw()
         self.window.flip()
+        self._log_target_drawn(x, y)
 
     def get_input_key(self) -> list:
         """Get keyboard input and convert to pylink key codes.
