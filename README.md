@@ -79,11 +79,11 @@ import pyelink as el
 
 # Configure tracker with backend
 settings = el.Settings(
-    backend='pygame',           # or 'psychopy', 'pyglet'
+    backend="pygame",  # or 'psychopy', 'pyglet'
     fullscreen=True,
-    screen_res=(1920, 1080),    # must match your display
-    screen_width=530.0,         # physical display width in mm
-    screen_height=300.0,        # physical display height in mm
+    screen_res=(1920, 1080),  # must match your display
+    screen_width=530.0,  # physical display width in mm
+    screen_height=300.0,  # physical display height in mm
     screen_distance_top_bottom=(600.0, 640.0),  # eye-to-screen edges in mm
     filename="mydata",
     filepath="./data/",
@@ -102,7 +102,7 @@ tracker.flip()
 
 # Option B: Helper methods for common patterns
 tracker.show_message("Press SPACE to begin")
-tracker.wait_for_key('space')
+tracker.wait_for_key("space")
 
 # Run your experiment
 tracker.start_recording()
@@ -119,12 +119,12 @@ All tracker parameters are configurable through the Settings class:
 
 ```python
 settings = el.Settings(
-    backend='pygame',
-    n_cal_targets=13,                         # 13-point calibration for large displays
-    calibration_area_proportion=(0.44, 0.415), # reduce calibration area for close viewing
-    calibration_corner_scaling=0.8,            # pull corner targets inward
-    sample_rate=1000,                          # 250, 500, 1000, or 2000 Hz
-    illumination_power=3,                      # reduce IR power (1=100%, 2=75%, 3=50%)
+    backend="pygame",
+    n_cal_targets=13,  # 13-point calibration for large displays
+    calibration_area_proportion=(0.44, 0.415),  # reduce calibration area for close viewing
+    calibration_corner_scaling=0.8,  # pull corner targets inward
+    sample_rate=1000,  # 250, 500, 1000, or 2000 Hz
+    illumination_power=3,  # reduce IR power (1=100%, 2=75%, 3=50%)
     # ... 50+ configurable parameters
 )
 ```

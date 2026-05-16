@@ -48,7 +48,7 @@ pyglet = [
 
 # Development dependencies
 dev = [
-    "ruff>=0.1.0",
+    "ruff>=0.13.0",
 ]
 
 [dependency-groups]
