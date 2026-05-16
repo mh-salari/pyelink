@@ -916,8 +916,24 @@ class EyeLink:  # noqa: PLR0904
                 else:
                     self.send_command("sticky_mode_data_enable DATA = 1 1 0 0")
 
+            # Pull raw P-CR during calibration / validation, not just during
+            # RECORD mode. The Host PC is already streaming raw samples over
+            # the link (link_sample_raw_pcr = 1 is set at connect time); the
+            # raw thread reads them and forwards each one to the EDF as a
+            # `MSG` line via send_message. Without this the cal/val raw
+            # samples fly past unread and CALIBRATE-mode samples land in the
+            # EDF with cr_x, cr_y NULL.
+            cal_raw_thread = record_samples and self.record_raw_data
+            if cal_raw_thread:
+                self._enable_realtime_mode()
+                self.data.start_raw_thread()
+
             # Calibrate
             self.do_tracker_setup(self.settings.screen_res[0], self.settings.screen_res[1])
+
+            if cal_raw_thread:
+                self.data.stop_raw_thread()
+                self._disable_realtime_mode()
 
             # Stop sending samples
             if record_samples:
